@@ -1,22 +1,53 @@
 <launch>
   <arg name="gui" default="true"/>
   <arg name="run_rviz" default="true" />
+  <arg name="gazebo" default="false" />
   <arg name="publish_objects_tf" default="true" />
+  <arg name="launch_tracking" default="false" />
+  <arg name="manager" default="pr2_deco_nodelet_manager"/>
+
   <arg name="physics" default="ode" />
+  <arg name="machine" value="localhost" />
+  <!-- arg name="machine" default="c2" / -->
+  
+  <group if="$(arg gazebo)">
+    <include file="$(find pr2eus_tutorials)/launch/gazebo/pr2_deco_scene.launch">
+      <arg name="gui" value="$(arg gui)"/>
+      <arg name="physics" value="$(arg physics)" />
+    </include>
+  </group>
 
-  <include file="$(find pr2eus_tutorials)/launch/gazebo/pr2_tabletop_scene.launch">
-    <arg name="gui" value="$(arg gui)"/>
-    <arg name="physics" value="$(arg physics)" />
+  <!-- tabletop_object_detector -->
+  <group unless="$(arg gazebo)">
+    <include file="$(find pr2_machine)/$(env ROBOT).machine" />
+  </group>
+  
+  <include file="$(find jsk_pcl_ros)/sample/tabletop_object_detector.launch">
+    <arg name="input" value="/kinect_head/depth_registered/throttled/points" />
+    <arg name="sensor_frame" value="/head_mount_kinect_rgb_optical_frame" />
+    <arg name="manager" value="$(arg manager)" />
+    <arg name="machine" value="$(arg machine)" />
+    <arg name="launch_openni" value="false" />
+    <arg name="launch_tracking" value="$(arg launch_tracking)" />
+    <arg name="launch_rviz" value="false" />
+    <arg name="publish_tf" value="$(arg publish_objects_tf)" />
   </include>
 
-  <include file="$(find pr2eus_tutorials)/launch/pr2_tabletop.launch">
-    <arg name="run_rviz" value="$(arg run_rviz)" />
-    <arg name="publish_objects_tf" value="$(arg publish_objects_tf)" />
-    <arg name="machine" value="localhost" />
-    <arg name="load_machine" value="true" />
-  </include>
+  <!-- 3Dpoint -> 2Dpoint -->
+  <node name="pointcloud_screenpoint_nodelet" pkg="nodelet" type="nodelet"
+        args="load jsk_pcl/PointcloudScreenpoint $(arg manager)"
+        output="screen" clear_params="true" respawn="true"
+        machine="$(arg machine)">
+    <remap from="~points" to="/kinect_head/depth_registered/throttled/points" />
+    <remap from="~point" to="/kinect_head/rgb/throttled/image_rect_color/screenpoint" />
+    <rosparam>
+      queue_size: 10
+      crop_size: 10
+      search_size: 16
+    </rosparam>
+  </node>
 
-  <!-- add ChaPlus -->
+  <!-- ChaPlus -->
   <arg name="chatbot_engine" default="Chaplus" />
   <node pkg="chaplus_ros" type="chaplus_ros_custom.py" name="chaplus_ros"
         output="screen" >
@@ -24,4 +55,15 @@
       chatbot_engine: $(arg chatbot_engine)
     </rosparam>
   </node>
+
+  <!-- launch rviz -->
+  <group if="$(arg run_rviz)">
+    <node pkg="rviz" name="pr2_rviz" type="rviz"
+          args="-d $(find pr2eus_tutorials)/config/pr2_deco.rviz" />
+    <!-- node name="pr2_interactive_object_grasp_2d_node" pkg="image_view2" type="image_view2" >
+	 <remap from="image" to="/kinect_head/rgb/throttled/image_rect_color" />
+	 <remap from="camera_info" to="/head_mount_kinect/rgb/camera_info" />
+    </node -->
+  </group>
+  
 </launch>
