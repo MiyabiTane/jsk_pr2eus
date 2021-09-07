@@ -56,6 +56,12 @@
     </rosparam>
   </node>
 
+  <!-- think decoration -->
+  <node name="think_deco"
+	pkg = "pr2eus_tutorials" type="think_deco_node.py"
+	output = "screen" respawn="false">
+  </node>
+
   <!-- launch rviz -->
   <group if="$(arg run_rviz)">
     <node pkg="rviz" name="pr2_rviz" type="rviz"
