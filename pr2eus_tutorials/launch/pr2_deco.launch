@@ -33,7 +33,7 @@
     <arg name="publish_tf" value="$(arg publish_objects_tf)" />
   </include>
 
-  <!-- 3Dpoint -> 2Dpoint -->
+  <!-- 2Dpoint -> 3Dpoint -->
   <node name="pointcloud_screenpoint_nodelet" pkg="nodelet" type="nodelet"
         args="load jsk_pcl/PointcloudScreenpoint $(arg manager)"
         output="screen" clear_params="true" respawn="true"

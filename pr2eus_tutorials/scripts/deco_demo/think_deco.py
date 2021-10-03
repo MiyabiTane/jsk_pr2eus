@@ -218,8 +218,10 @@ class ThinkDecoration:
             # print(self.genes)
         best_point, best_gene = self.best_gene
         print("BEST POINT: ", best_point)
+        print(best_gene)
         output_img = self.generate_img(best_gene)
         cv2.imwrite(DIR_PATH + "share/ga_output.jpg", output_img)
+        return best_gene
 
 
 # GA http://samuiui.com/2019/10/27/python%E3%81%A7%E9%81%BA%E4%BC%9D%E7%9A%84%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%EF%BC%88ga%EF%BC%89%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%97%E3%81%A6%E5%B7%A1%E5%9B%9E%E3%82%BB%E3%83%BC/
