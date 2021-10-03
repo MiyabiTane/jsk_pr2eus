@@ -11,21 +11,22 @@ from collections import deque
 
 TH = 150
 ALPHA = 0
-INPUT_NAME = "/images/pix2pix_input.jpg"
-OUTPUT_NAME = "/images/pix2pix_output.jpg"
-DIR_PATH = roslib.packages.get_pkg_dir('pr2eus_tutorials') + "/scripts/deco_demo"
+INPUT_NAME = "share/pix2pix_input.jpg"
+OUTPUT_NAME = "share/pix2pix_output.jpg"
+DIR_PATH = roslib.packages.get_pkg_dir('pr2eus_tutorials') + "/scripts/deco_demo/"
 
 
+# you need to run: pr2eus_tutorials/scripts/deco_demo$ docker image build -t deco_tensor .
 def think_with_trained_pix2pix(input_img):
     # input_img.shape = (480, 640, 3)
     img = np.full((640, 640, 3), 255)
     img[90: 570] = input_img
     cv2.imwrite(DIR_PATH + INPUT_NAME, img)
     # 学習済みpix2pixによる飾り付け画像生成
-    print("PATH :", DIR_PATH + "/trained_pix2pix.py")
-    subprocess.run(["pipenv", "run", "python", DIR_PATH + "/trained_pix2pix.py", "--input", DIR_PATH + INPUT_NAME, "--output", DIR_PATH + OUTPUT_NAME])
+    subprocess.call(["docker", "run", "--rm", "-it", "--mount", "type=bind,source=" + DIR_PATH + "share,target=/deco_tensor/share",
+                    "deco_tensor", "python3", "trained_pix2pix.py", "--input", INPUT_NAME, "--output", OUTPUT_NAME])
     output_img = cv2.imread(DIR_PATH + OUTPUT_NAME)
-    output_img = cv2.resize(DIR_PATH + OUTPUT_NAME , (640, 640))
+    output_img = cv2.resize(output_img , (640, 640))
     output_img = output_img[90: 570]
     return output_img
 
@@ -218,7 +219,7 @@ class ThinkDecoration:
         best_point, best_gene = self.best_gene
         print("BEST POINT: ", best_point)
         output_img = self.generate_img(best_gene)
-        cv2.imwrite(DIR_PATH + "/images/ga_output.jpg", output_img)
+        cv2.imwrite(DIR_PATH + "share/ga_output.jpg", output_img)
 
 
 # GA http://samuiui.com/2019/10/27/python%E3%81%A7%E9%81%BA%E4%BC%9D%E7%9A%84%E3%82%A2%E3%83%AB%E3%82%B4%E3%83%AA%E3%82%BA%E3%83%A0%EF%BC%88ga%EF%BC%89%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%97%E3%81%A6%E5%B7%A1%E5%9B%9E%E3%82%BB%E3%83%BC/

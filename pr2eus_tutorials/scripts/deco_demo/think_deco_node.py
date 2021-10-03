@@ -59,8 +59,8 @@ class ThinkDecorationNode:
             # make decoration img
             self.output_img = think_with_trained_pix2pix(self.input_img)
             # Visualize (for debug)
-            cv2.imwrite(self.dir_path + "/images/input.png", self.input_img)
-            cv2.imwrite(self.dir_path + "/images/output.png", self.output_img)
+            cv2.imwrite(self.dir_path + "/share/input.png", self.input_img)
+            cv2.imwrite(self.dir_path + "/share/output.png", self.output_img)
             # think placement of decorations
             think_deco = ThinkDecoration(self.deco_imgs, self.deco_masks, self.input_img, self.output_img)
             think_deco.GA_calc()
