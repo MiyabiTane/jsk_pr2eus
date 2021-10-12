@@ -71,15 +71,15 @@ class ThinkDecorationNode:
             self.output_arr = think_deco.GA_calc()
 
         # publish result
-        # position.x -> x, position.y -> y, orientation.x -> width, orientation.y -> length
+        # position.x -> center_x, position.y -> center_y, orientation.x -> width, orientation.y -> length
         # position.z -> flag
         pub_msg = PoseArray()
         for x, y, w, l in self.output_arr:
             pose_msg = Pose()
             point_msg = Point()
             quater_msg = Quaternion()
-            point_msg.x = x
-            point_msg.y = y
+            point_msg.x = x + w / 2
+            point_msg.y = y + l / 2
             point_msg.z = self.flag
             quater_msg.x = w
             quater_msg.y = l

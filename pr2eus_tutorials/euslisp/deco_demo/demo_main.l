@@ -18,7 +18,7 @@
   )
 
 ;; global variables
-(setq place_pos '())
+(setq place_pos_lst '())
 
 (pr2-init)
 (set-init-pose)
