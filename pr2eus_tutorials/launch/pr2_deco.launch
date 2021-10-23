@@ -17,11 +17,12 @@
     </include>
   </group>
 
-  <!-- tabletop_object_detector -->
-  <group unless="$(arg gazebo)">
+
+  <!-- group unless="$(arg gazebo)">
     <include file="$(find pr2_machine)/$(env ROBOT).machine" />
-  </group>
-  
+  </group -->
+
+  <!-- tabletop_object_detector -->
   <include file="$(find jsk_pcl_ros)/sample/tabletop_object_detector.launch">
     <arg name="input" value="/kinect_head/depth_registered/throttled/points" />
     <arg name="sensor_frame" value="/head_mount_kinect_rgb_optical_frame" />
@@ -71,5 +72,37 @@
 	 <remap from="camera_info" to="/head_mount_kinect/rgb/camera_info" />
     </node -->
   </group>
+
+  <!-- virtual force for left arm -->
+    <!-- group ns="left_endeffector">
+      <arg name="publish_frequency" default="50.0"/>
+      <arg name="time_constant" default="0.3"/>
+      <arg name="root" default="torso_lift_link"/>
+      <arg name="tip"  default="l_gripper_tool_frame"/>
+      <arg name="input" default="joint_states"/>
+      <node pkg="virtual_force_publisher" type="virtual_force_publisher" name="virtual_force_publisher">
+	<remap from="joint_states" to="/$(arg input)"/>
+	<param name="publish_frequency" value="$(arg publish_frequency)"/>
+	<param name="time_constant" value="$(arg time_constant)"/>
+	<param name="root" value="$(arg root)"/>
+	<param name="tip" value="$(arg tip)"/>
+      </node>
+    </group -->
+
+    <!-- virtual force for right arm -->
+    <!-- group ns="right_endeffector">
+      <arg name="publish_frequency" default="50.0"/>
+      <arg name="time_constant" default="0.3"/>
+      <arg name="root" default="torso_lift_link"/>
+      <arg name="tip"  default="r_gripper_tool_frame"/>
+      <arg name="input" default="joint_states"/>
+      <node pkg="virtual_force_publisher" type="virtual_force_publisher" name="virtual_force_publisher">
+	<remap from="joint_states" to="/$(arg input)"/>
+	<param name="publish_frequency" value="$(arg publish_frequency)"/>
+	<param name="time_constant" value="$(arg time_constant)"/>
+	<param name="root" value="$(arg root)"/>
+	<param name="tip" value="$(arg tip)"/>
+      </node>
+    </group -->
   
 </launch>

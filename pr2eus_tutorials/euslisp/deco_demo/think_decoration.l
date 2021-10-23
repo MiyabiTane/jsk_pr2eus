@@ -1,4 +1,4 @@
-;; set pub topic
+;; set pub sub topics
 (ros::roseus-add-msgs "pr2eus_tutorials")
 (setq *deco-pub-topic* "/think_deco/input")
 (setq *deco-sub-topic* "/think_deco/output")
@@ -10,9 +10,6 @@
 (ros::advertise *deco-pub-topic* pr2eus_tutorials::DecoImages 1)
 (ros::advertise *screenpoint-pub-topic* geometry_msgs::PointStamped 1)
 (ros::rate 10)
-
-(ros::load-ros-package "sensor_msgs")
-(ros::load-ros-package "geometry_msgs")
 
 
 (defun pub-img ()
@@ -90,5 +87,5 @@
   )
 
 
-(get-place-pos)
+;; (get-place-pos)
 ;; (ros::exit)
