@@ -18,6 +18,8 @@
 			  :pos (float-vector 600 300 900)
 			  :rpy (float-vector 1.486e-06 1.384e-06 1.571)))
   (send *pr2* :larm :inverse-kinematics *target-lcoords* :rotation-axis t)
+  (send *pr2* :rarm :move-end-pos #f(0 150 0) :world)
+  (send *pr2* :larm :move-end-pos #f(0 -150 0) :world)
   (send-robot 5000)
   )
 
@@ -30,58 +32,64 @@
 
 
 (defun vforce-cb (msg)
-  ;; (setq force_data (send (send msg :wrench) :force))
-  ;; (setq force_vector (float-vector (send force_data :x) (send force_data :y) (send force_data :z)))
-  ;; (setq force_norm (norm force_vector))
-  (setq torque_data (send (send msg :wrench) :torque))
-  (setq torque_vector (float-vector (send torque_data :x) (send torque_data :y) (send torque_data :z)))
-  (setq torque_norm (norm torque_vector))
+  (setq force_data (send (send msg :wrench) :force))
+  (setq force_vector (float-vector (send force_data :x) (send force_data :y) (send force_data :z)))
+  (setq force_norm (norm force_vector))
   )
 
 
 (defun catch-balloon ()
   ;; ToDo[ここは対話を使うのではなく、自分で認識して取る] --------
-  (send *ri* :speak-jp "風船を渡して下さい")
-  (format t "speak: 風船を渡して下さい~%")
-  (setq flag 0)
-  (ros::subscribe *speech-sub-topic* speech_recognition_msgs::SpeechRecognitionCandidates #'speech-cb)
-  (while (= flag 0)
-    (ros::spin)
-    (ros::sleep))
-  (ros::unsubscribe *speech-sub-topic*)
-  (send *ri* :speak-jp "ありがとうございます")
+  (send *ri* :speak-jp "風船を渡して下さい~%")
+  (ros::duration-sleep 5)
+  (send *ri* :speak-jp "ありがとうございます~%")
   ;; ---------------------------------------------
   ;; start to catch
-  (setq l_prev_norm 0)
-  (setq r_prev_norm 0)
+  (setq l_prev_norm -1)
+  (setq r_prev_norm -1)
   (setq l_norm_diff 0)
   (setq r_norm_diff 0)
-  (ros::subscribe *l-force-sub-topic* geometry_msgs::WrenchStamped #'l-force-cb)
-  (ros::subscribe *r-force-sub-topic* geometry_msgs::WrenchStamped #'r-force-cb)
-  (while (and (< l_norm_diff 2) (< r_norm_diff 2))
+  (while (and (< l_norm_diff 3) (< r_norm_diff 3))
+    ;; bring arm closer
+    (send *pr2* :rarm :move-end-pos #f(0 10 0) :world)
+    (send *pr2* :larm :move-end-pos #f(0 -10 0) :world)
+    (send-robot 4000)
+    ;; subscribe force info
     (setq l_force_msg (one-shot-subscribe *l-force-sub-topic*
 					 geometry_msgs::WrenchStamped
 					 :after-stamp (ros::time-now)))
     (vforce-cb l_force_msg)
-    (setq l_torque_norm torque_norm)
+    (setq l_force_norm force_norm)
     (setq r_force_msg (one-shot-subscribe *r-force-sub-topic*
 					  geometry_msgs::WrenchStamped
 					  :after-stamp (ros::time-now))) 
     (vforce-cb r_force_msg)
-    (setq r_torque_norm torque_norm)
-    (when (and (= l_prev_norm 0) (= r_prev_norm 0))
-      (setq l_prev_norm l_torque_norm)
-      (setq r_prev_norm r_torque_norm))
-    (setq l_norm_diff (abs (- l_torque_norm l_prev_norm)))
-    (setq r_norm_diff (abs (- r_torque_norm r_prev_norm)))
-    (format t "diff left: ~A, right: ~A~%" l_norm_diff r_norm_diff)
-    ;; bring arm closer
-    (send *pr2* :rarm :move-end-pos #f(0 10 0) :world)
-    (send *pr2* :larm :move-end-pos #f(0 -10 0) :world))
+    (setq r_force_norm force_norm)
+    (when (and (= l_prev_norm -1) (= r_prev_norm -1))
+      (setq l_prev_norm l_force_norm)
+      (setq r_prev_norm r_force_norm))
+    (setq l_norm_diff (abs (- l_force_norm l_prev_norm)))
+    (setq r_norm_diff (abs (- r_force_norm r_prev_norm)))
+    (formar r "diff left: ~A, right: ~A~%" l_norm_diff r_norm_diff))
   (ros::unsubscribe *l-force-sub-topic*)
   (ros::unsubscribe *r-force-sub-topic*)
   )
 
+
+(defun work-on-decoration ()
+  ;; 壁との干渉計算
+  (setq pre_x -1) ;; if not execute funcs in think_decoration.l
+  (convert-2D->3D 320 240)  ;;func in think_decoration.l
+  (setq wall_x cur_x)  ;; 壁との距離
+  (format t "wall_x: ~A~%" wall_x)
+  (setq *wall* (make-cube 100 4000 4000))
+  (send *wall* :locate (float-vector cur_x 0 2000))
+  ;; (setq *co* (instance collision-object-publisher :init))
+  ;; (send *co* :add-object *wall* :frame-id "map" :relative-pose (make-coords :pos #f(-2200.0 6300.0 0.0)))
+  ;; (objects (list *pr2* *wall*))
+  
+  ;; (send *co* :wipe-all)
+  )
 
 ;; --------- make pose ----------
 (defun make-before-catch-pose ()

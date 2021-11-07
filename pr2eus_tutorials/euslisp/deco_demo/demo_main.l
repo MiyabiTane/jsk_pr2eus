@@ -31,16 +31,18 @@
 
 ;; set robot
 (pr2-init)
-(set-init-pose)
+;; (set-init-pose)
 (format t "set pose ~%")
 
 ;; load files
+(load "package://pr2eus_moveit/euslisp/collision-object-publisher.l")
 ;; (load "recognize_decoration.l")
 (load "think_decoration.l")
 (load "work_on_decoration.l")
 
 ;; main
-(get-place-pos)
+;; (get-place-pos)
 
-(before-catch-pose)
-(catch-balloon)
+;; (before-catch-pose)
+;; (catch-balloon)
+(work-on-decoration)
