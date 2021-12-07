@@ -20,11 +20,11 @@ class ThinkDecorationNode:
         self.dir_path = roslib.packages.get_pkg_dir('pr2eus_tutorials') + "/scripts/deco_demo"
         self.deco_imgs = []
         self.deco_masks = []
-        self.secs = -1
+        self.seq = -1
         self.input_img = None
         self.output_img = None
         self.bridge = CvBridge()
-        self.output_arr = []
+        self.output_arr = [(0, 0, 0, 0)]
         self.flag = 0
 
         self.pub = rospy.Publisher("~output", PoseArray, queue_size=1)
@@ -33,13 +33,14 @@ class ThinkDecorationNode:
 
 
     def decos_cb(self, msg):
-        secs = msg.header.stamp.secs
-        if abs(secs - self.secs) > 60:
+        seq = msg.header.seq
+        if seq - self.seq > 60:
+            # 一定時間以上経ったら計算結果を無効とする
             self.flag = 0
-        if abs(secs - self.secs) > 1:
+        if seq != self.seq:
             print("=== THINK DECORATION START===")
             self.flag = 1
-            self.secs = secs
+            self.seq = seq
             self.input_img = self.bridge.imgmsg_to_cv2(msg.back_img, desired_encoding="bgr8")
             """ ToDo
             for deco_msg in msg.deco_imgs:

@@ -76,6 +76,64 @@
   )
 
 
+;;(defun ik-same-pose (lpos rpos)
+;; (setq *pr2_l_pose* (send (send *pr2* :larm :end-coords) :copy-worldcoords))
+;; (setq diff (v- lpos (send *pr2_l_pose* :pos)))
+;; (send *pr2_l_pose* :translate diff :world)
+;; (send *pr2* :larm :inverse-kinematics *pr2_l_pose* :debug-view t)
+;; (send *pr2_r_pose* (send (send *pr2* :rarm :end-coords) :copy-worldcoords))
+;; (setq diff (v- rpos (send *pr2_r_pose* :pos)))
+;; (send *pr2* :rarm :inverse-kinematics *pr2_r_pose* :debug-view t)
+;;  )
+
+
+(defun set-balloon (goal_pos)
+  ;; 手先の座標はベースリンク基準であることに注意
+  (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
+  (setq cur_lpos (send (send (send *pr2* :larm :end-coords) :copy-worldcoords) :pos))
+  (setq arm_end_coords (scale 0.5 (v+ cur_rpos cur_lpos)))
+  ;; 壁に近づく
+  (setq move_vec (float-vector (elt goal_pos 0) (elt goal_pos 1) 0))
+  (setq move_vec (v- move_vec (float-vector (elt arm_end_coords 0) (elt arm_end_coords 1) 0)))
+  (setq move_vec (v- move_vec #f(300 0 0)))
+  (setq move_length (norm move_vec))
+  (format t "MOVE_VEC: ~A ~A~%" move_vec move_length)
+  (send *ri* :go-velocity 0 0 (atan (/ y x)))
+  (send *ri* :wait-interpolation)
+  (while (> move_length 0)
+    (if (>= move_length 300)
+	(send *ri* :go-velocity 300 0 0)
+      (send *ri* :go-velocity move_length 0 0))
+    (setq move_length (- move_length 300))
+    (send *ri* :wait-interpolation)
+    )
+  (send *ri* :go-velocity 0 0 (* -1 (atan (/ y x))))
+  (send *ri* :wait-interpolation)
+  ;; (send *ri* :go-velocity (elt move_vec 0) (elt move_vec 1) 0)
+  ;; 腕を動かす
+  (setq balloon_width (- (elt cur_lpos 1) (elt cur_rpos 1)))
+  (setq goal_rpos (v- goal_pos (float-vector 0 (/ balloon_width 2) 0)))
+  (setq goal_lpos (v+ goal_pos (float-vector 0 (/ balloon_width 2) 0)))
+  (setq goal_rpos (v- goal_rpos move_vec))
+  (setq goal_lpos (v- goal_lpos move_vec))
+  ;; デバッグ用
+  (setq r_target (make-cube 40 40 40))
+  (send r_target :locate goal_rpos)
+  (setq l_target (make-cube 40 40 40))
+  (send l_target :locate goal_lpos)
+  (objects (list *pr2* r_target l_target))
+
+  (format t "RPOS: ~A -> ~A~%" cur_rpos goal_rpos)
+  (format t "LPOS: ~A -> ~A~%" cur_lpos goal_lpos)
+
+  (setq up_length (- (- (elt goal_rpos 2) (elt cur_rpos 2)) 100))
+  (send *pr2* :torso_lift_joint :joint-angle (+ (send *pr2* :torso_lift_joint :joint-angle) up_length))
+  (send *pr2* :rarm :move-end-pos (v- goal_rpos cur_rpos) :world)
+  (send *pr2* :larm :move-end-pos (v- goal_lpos cur_lpos) :world)
+  (send-robot 4000)
+  )
+
+
 (defun work-on-decoration ()
   ;; 壁との干渉計算
   (setq pre_x -1) ;; if not execute funcs in think_decoration.l
@@ -86,8 +144,12 @@
   (send *wall* :locate (float-vector cur_x 0 2000))
   ;; (setq *co* (instance collision-object-publisher :init))
   ;; (send *co* :add-object *wall* :frame-id "map" :relative-pose (make-coords :pos #f(-2200.0 6300.0 0.0)))
-  ;; (objects (list *pr2* *wall*))
-  
+  (objects (list *pr2* *wall*))
+  ;; 飾り付け
+  (dotimes (i (length place_pos_lst))
+    (if (= i 0)
+	(set-balloon (elt place_pos_lst i)))
+    )
   ;; (send *co* :wipe-all)
   )
 
@@ -105,3 +167,7 @@
   (format t "rarm-pose: ~A~%" (send *pr2* :rarm :end-coords))
   ;; init poseを元に左右の対称性をみた
   )
+
+;; move-to
+;; (setq *spot* (make-coords :pos #f(1000 0 0)))
+;;  (send *ri* :move-to *spot*)
