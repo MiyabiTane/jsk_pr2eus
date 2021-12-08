@@ -20,6 +20,8 @@
   (send *pr2* :larm :inverse-kinematics *target-lcoords* :rotation-axis t)
   (send *pr2* :rarm :move-end-pos #f(0 150 0) :world)
   (send *pr2* :larm :move-end-pos #f(0 -150 0) :world)
+  (setq *target-hcoords* (scale 0.5 (v+ (send *target-rcoords* :pos) (send *target-lcoords* :pos))))
+  (send *pr2* :head :look-at (v- *target-hcoords* #f(0 0 100)))
   (send-robot 5000)
   )
 
@@ -34,7 +36,6 @@
 (defun vforce-cb (msg)
   (setq force_data (send (send msg :wrench) :force))
   (setq force_vector (float-vector (send force_data :x) (send force_data :y) (send force_data :z)))
-  (setq force_norm (norm force_vector))
   )
 
 
@@ -45,8 +46,8 @@
   (send *ri* :speak-jp "ありがとうございます~%")
   ;; ---------------------------------------------
   ;; start to catch
-  (setq l_prev_norm -1)
-  (setq r_prev_norm -1)
+  (setq l_prev_norm (float-vector 0 0 0))
+  (setq r_prev_norm (float-vector 0 0 0))
   (setq l_norm_diff 0)
   (setq r_norm_diff 0)
   (while (and (< l_norm_diff 3) (< r_norm_diff 3))
@@ -56,20 +57,20 @@
     (send-robot 4000)
     ;; subscribe force info
     (setq l_force_msg (one-shot-subscribe *l-force-sub-topic*
-					 geometry_msgs::WrenchStamped
-					 :after-stamp (ros::time-now)))
+					  geometry_msgs::WrenchStamped
+					  :after-stamp (ros::time-now)))
     (vforce-cb l_force_msg)
-    (setq l_force_norm force_norm)
+    (setq l_force_vec force_vector)
     (setq r_force_msg (one-shot-subscribe *r-force-sub-topic*
 					  geometry_msgs::WrenchStamped
 					  :after-stamp (ros::time-now))) 
     (vforce-cb r_force_msg)
-    (setq r_force_norm force_norm)
-    (when (and (= l_prev_norm -1) (= r_prev_norm -1))
+    (setq r_force_vec force_vector)
+    (when (and (= (norm l_prev_vec) 0) (= (norm r_prev_vec) 0))
       (setq l_prev_norm l_force_norm)
       (setq r_prev_norm r_force_norm))
-    (setq l_norm_diff (abs (- l_force_norm l_prev_norm)))
-    (setq r_norm_diff (abs (- r_force_norm r_prev_norm)))
+    (setq l_norm_diff (norm (v- l_force_vec l_prev_vec)))
+    (setq r_norm_diff (norm (v- r_force_vec r_prev_vec)))
     (formar r "diff left: ~A, right: ~A~%" l_norm_diff r_norm_diff))
   (ros::unsubscribe *l-force-sub-topic*)
   (ros::unsubscribe *r-force-sub-topic*)
