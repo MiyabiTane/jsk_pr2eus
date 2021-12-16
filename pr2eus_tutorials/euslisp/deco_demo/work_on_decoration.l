@@ -85,26 +85,28 @@
 
 
 (defun set-balloon (goal_pos)
+  (setq *X-OFFSET* 300)
   ;; 手先の座標はベースリンク基準であることに注意
+  (format t "GOAL_POS: ~A~%" goal_pos)
   (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
   (setq cur_lpos (send (send (send *pr2* :larm :end-coords) :copy-worldcoords) :pos))
   (setq arm_end_coords (scale 0.5 (v+ cur_rpos cur_lpos)))
   ;; 壁に近づく
   (setq move_vec (float-vector (elt goal_pos 0) (elt goal_pos 1) 0))
   (setq move_vec (v- move_vec (float-vector (elt arm_end_coords 0) (elt arm_end_coords 1) 0)))
-  (setq move_vec (v- move_vec #f(300 0 0)))
+  (setq move_vec (v- move_vec (float-vector *X-OFFSET* 0 0)))
   (setq move_length (norm move_vec))
   (format t "MOVE_VEC: ~A ~A~%" move_vec move_length)
-  (send *ri* :go-velocity 0 0 (atan (/ y x)))
+  (send *ri* :go-velocity 0 0 (atan (/ (elt move_vec 1) (elt move_vec 0))))
   (send *ri* :wait-interpolation)
   (while (> move_length 0)
-    (if (>= move_length 300)
-	(send *ri* :go-velocity 300 0 0)
+    (if (>= move_length *X-OFFSET*)
+	(send *ri* :go-velocity *X-OFFSET* 0 0)
       (send *ri* :go-velocity move_length 0 0))
-    (setq move_length (- move_length 300))
+    (setq move_length (- move_length *X-OFFSET*))
     (send *ri* :wait-interpolation)
     )
-  (send *ri* :go-velocity 0 0 (* -1 (atan (/ y x))))
+  (send *ri* :go-velocity 0 0 (* -1 (atan (/ (elt move_vec 1) (elt move_vec 0)))))
   (send *ri* :wait-interpolation)
   ;; (send *ri* :go-velocity (elt move_vec 0) (elt move_vec 1) 0)
   ;; 腕を動かす
@@ -124,10 +126,34 @@
   (format t "LPOS: ~A -> ~A~%" cur_lpos goal_lpos)
 
   (setq up_length (- (- (elt goal_rpos 2) (elt cur_rpos 2)) 100))
+  (format t "UP_LENGTH ~A~%" up_length)
   (send *pr2* :torso_lift_joint :joint-angle (+ (send *pr2* :torso_lift_joint :joint-angle) up_length))
+  (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
+  (setq cur_lpos (send (send (send *pr2* :larm :end-coords) :copy-worldcoords) :pos))
+  (send *pr2* :head :look-at #f(500 0 1400))
   (send *pr2* :rarm :move-end-pos (v- goal_rpos cur_rpos) :world)
   (send *pr2* :larm :move-end-pos (v- goal_lpos cur_lpos) :world)
+  (send *pr2* :head :look-at (scale 0.5 (v+ goal_rpos goal_lpos)))
   (send-robot 4000)
+  )
+
+
+(defun go-back ()  ;; move_vec, up_length are defined
+  (setq *X-OFFSET* 300)
+  (send *pr2* :torso_lift_joint :joint-angle (- (send *pr2* :torso_lift_joint :joint-angle) up_length))
+  (before-catch-pose)
+  (send *ri* :go-velocity 0 0 (atan (/ (elt move_vec 1) (elt move_vec 0))))
+  (send *ri* :wait-interpolation)
+  (setq move_length (norm move_vec))
+  (while (> move_length 0)
+    (if (>= move_length *X-OFFSET*)
+	(send *ri* :go-velocity (* -1 *X-OFFSET*) 0 0)
+      (send *ri* :go-velocity (* -1 move_length) 0 0))
+    (setq move_length (- move_length *X-OFFSET*))
+    (send *ri* :wait-interpolation)
+    )
+  (send *ri* :go-velocity 0 0 (* -1 (atan (/ (elt move_vec 1) (elt move_vec 0)))))
+  (send *ri* :wait-interpolation)
   )
 
 
@@ -144,11 +170,17 @@
   (objects (list *pr2* *wall*))
   ;; 飾り付け
   (dotimes (i (length place_pos_lst))
-    (if (= i 0)
-	(set-balloon (elt place_pos_lst i)))
+    (when (= i 0)
+      (set-balloon (elt place_pos_lst i))
+      (format t "SET BALLOON~%")
+      ;; ToDo 風船を押し付ける動き
+      (ros::duration-sleep 5)
+      ;;(go-back)
+      )
     )
   ;; (send *co* :wipe-all)
   )
+
 
 ;; --------- make pose ----------
 (defun make-before-catch-pose ()
