@@ -15,8 +15,12 @@
       <arg name="gui" value="$(arg gui)"/>
       <arg name="physics" value="$(arg physics)" />
     </include>
-  </group>
 
+    <node name="speech_to_text_mux" pkg="topic_tools" type="mux"
+	  args="/speech_to_text /speech_to_text_google /speech_to_text_julius /speech_to_text_other" >
+      <remap from="mux" to="speech_to_text_mux"/>
+    </node>
+  </group>
 
   <!-- group unless="$(arg gazebo)">
     <include file="$(find pr2_machine)/$(env ROBOT).machine" />
@@ -49,6 +53,13 @@
   </node>
 
   <!-- ChaPlus -->
+  <node name="relay_sound"
+	pkg="pr2eus_tutorials" type="relay_sound_with_flag.py"
+	output="screen" respawn="true">
+    <remap from="~input" to="/speech_to_text" />
+    <remap from="~output" to="/request" />
+  </node>
+
   <arg name="chatbot_engine" default="Chaplus" />
   <node pkg="chaplus_ros" type="chaplus_ros_custom.py" name="chaplus_ros"
         output="screen" >
@@ -56,6 +67,11 @@
       chatbot_engine: $(arg chatbot_engine)
     </rosparam>
   </node>
+
+  <!-- node to convert /response (std_msgs/String) to /robotsound_jp (sound_play/SoundRequest) -->
+  <node pkg="topic_tools" type="relay_field" name="string_to_sound_request"
+	args="--wait-for-start /response /robotsound_jp sound_play/SoundRequest
+       '{sound: -3, command: 1, volume: 1.0, arg: m.data}'" />
 
   <!-- think decoration -->
   <node name="think_deco"
