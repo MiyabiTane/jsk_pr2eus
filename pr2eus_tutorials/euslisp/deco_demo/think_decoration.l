@@ -16,7 +16,7 @@
   (setq pub-msg (instance pr2eus_tutorials::DecoImages :init))
   ;; Subscribe image_raw
   (setq *image_raw-msg*
-	(one-shot-subscribe "/head_mount_kinect/rgb/image_raw"
+	(one-shot-subscribe "/kinect_head/rgb/throttled/image_rect_color"
 			    sensor_msgs::Image
 			    :after-stamp (ros::time-now)))
   (send pub-msg :header :stamp (ros::time-now))

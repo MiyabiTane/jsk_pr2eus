@@ -3,9 +3,12 @@
 ;;set pub sub topic
 (ros::load-ros-package "speech_recognition_msgs")
 (ros::load-ros-package "geometry_msgs")
+(ros::load-ros-package "std_msgs")
+(setq *chat-flag-topic* "/relay_sound/input/chaplus_flag")
 (setq *speech-sub-topic* "/speech_to_text")
 (setq *l-force-sub-topic* "/left_endeffector/wrench")
 (setq *r-force-sub-topic* "/right_endeffector/wrench")
+(ros::advertise *chat-flag-topic* std_msgs::Bool 1)
 (ros::rate 10)
 
 
@@ -38,13 +41,30 @@
   (setq force_vector (float-vector (send force_data :x) (send force_data :y) (send force_data :z)))
   )
 
+(defun start-chat ()
+  (setq pub_chat_msg (instance std_msgs::Bool :init))
+  (send pub_chat_msg :data t)
+  (dotimes (i 100)
+    (ros::publish *chat-flag-topic* pub_chat_msg)
+    (ros::spin-once)
+    (ros::sleep))
+  )
+
+(defun stop-chat ()
+  (setq pub_chat_msg (instance std_msgs::Bool :init))
+  (send pub_chat_msg :data nil)
+  (dotimes (i 100)
+    (ros::publish *chat-flag-topic* pub_chat_msg)
+    (ros::spin-once)
+    (ros::sleep))
+  )
 
 (defun catch-balloon ()
   ;; ToDo[ここは対話を使うのではなく、自分で認識して取る] --------
-  (send *ri* :speak-jp "風船を渡して下さい~%")
+  (send *ri* :speak-jp "風船を渡して下さい")
   ;; (format t "風船を渡してください~%")
   (ros::duration-sleep 5)
-  (send *ri* :speak-jp "ありがとうございます~%")
+  (send *ri* :speak-jp "ありがとうございます")
   ;; (format t "ありがとうございます~%")
   ;; ---------------------------------------------
   ;; start to catch
@@ -138,6 +158,11 @@
   )
 
 
+(defun push-balloon ()
+  (format t "ToDo:風船を押し付ける動き~%")
+  )
+
+
 (defun go-back ()  ;; move_vec, up_length are defined
   (setq *X-OFFSET* 300)
   (send *pr2* :torso_lift_joint :joint-angle (- (send *pr2* :torso_lift_joint :joint-angle) up_length))
@@ -169,15 +194,16 @@
   ;; (send *co* :add-object *wall* :frame-id "map" :relative-pose (make-coords :pos #f(-2200.0 6300.0 0.0)))
   (objects (list *pr2* *wall*))
   ;; 飾り付け
+  (start-chat)
+  (send *ri* :speak-jp "飾り付け楽しみですね")
+  (format t "飾り付け楽しみですね~%")
   (dotimes (i (length place_pos_lst))
-    (when (= i 0)
-      (set-balloon (elt place_pos_lst i))
-      (format t "SET BALLOON~%")
-      ;; ToDo 風船を押し付ける動き
-      (ros::duration-sleep 5)
-      ;;(go-back)
-      )
+    (set-balloon (elt place_pos_lst i))
+    (format t "SET BALLOON~%")
+    (push-balloon)
+    (go-back)
     )
+  (stop-chat)
   ;; (send *co* :wipe-all)
   )
 
