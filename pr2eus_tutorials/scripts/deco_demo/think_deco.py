@@ -151,7 +151,7 @@ class ThinkDecoration:
 
     def partial_crossover(self, parent_1, parent_2):
         num = len(parent_1)
-        cross_point = random.randrange(2, num-1)
+        cross_point = random.randrange(2, num-1) if num > 2 else 0
         child_1 = parent_1
         child_2 = parent_2
         for i in range(num - cross_point):
