@@ -5,7 +5,7 @@ import glob
 import roslib.packages
 import cv2
 
-from think_deco import ThinkDecoration, think_with_trained_pix2pix
+from think_deco import ThinkDecoration, think_with_trained_pix2pix, remove_dup_deco
 
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseArray
 from std_msgs.msg import String
@@ -68,7 +68,8 @@ class ThinkDecorationNode:
             # cv2.imwrite(self.dir_path + "/share/input.png", self.input_img)
             # cv2.imwrite(self.dir_path + "/share/output.png", self.output_img)
             # think placement of decorations
-            think_deco = ThinkDecoration(self.deco_imgs, self.deco_masks, self.input_img, self.output_img)
+            self.deco_imgs, self.deco_masks, decorated_pos = remove_dup_deco(self.input_img, self.deco_imgs, self.deco_masks)
+            think_deco = ThinkDecoration(self.deco_imgs, self.deco_masks, self.input_img, self.output_img, decorated_pos)
             self.output_arr = think_deco.GA_calc()
 
         # publish result
