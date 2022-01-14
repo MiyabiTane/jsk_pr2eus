@@ -28,6 +28,7 @@ class ThinkDecorationNode:
         self.flag = 0
 
         self.pub = rospy.Publisher("~output", PoseArray, queue_size=1)
+        self.pub_msg = PoseArray()
 
         rospy.Subscriber("~input", DecoImages, self.decos_cb)
 
@@ -72,23 +73,24 @@ class ThinkDecorationNode:
             think_deco = ThinkDecoration(self.deco_imgs, self.deco_masks, self.input_img, self.output_img, decorated_pos)
             self.output_arr = think_deco.GA_calc()
 
-        # publish result
-        # position.x -> center_x, position.y -> center_y, orientation.x -> width, orientation.y -> length
-        # position.z -> flag
-        pub_msg = PoseArray()
-        for x, y, w, l in self.output_arr:
-            pose_msg = Pose()
-            point_msg = Point()
-            quater_msg = Quaternion()
-            point_msg.x = x + w / 2
-            point_msg.y = y + l / 2
-            point_msg.z = self.flag
-            quater_msg.x = w
-            quater_msg.y = l
-            pose_msg.position = point_msg
-            pose_msg.orientation = quater_msg
-            pub_msg.poses.append(pose_msg)
-        self.pub.publish(pub_msg)
+            # publish result
+            # position.x -> center_x, position.y -> center_y, orientation.x -> width, orientation.y -> length
+            # position.z -> flag
+            self.pub_msg = PoseArray()
+            for x, y, w, l in self.output_arr:
+                pose_msg = Pose()
+                point_msg = Point()
+                quater_msg = Quaternion()
+                point_msg.x = x + w / 2
+                point_msg.y = y + l / 2
+                point_msg.z = self.flag
+                quater_msg.x = w
+                quater_msg.y = l
+                pose_msg.position = point_msg
+                pose_msg.orientation = quater_msg
+                self.pub_msg.poses.append(pose_msg)
+
+        self.pub.publish(self.pub_msg)
 
 
 if __name__ == '__main__':

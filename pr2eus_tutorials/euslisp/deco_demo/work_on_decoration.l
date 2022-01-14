@@ -11,8 +11,11 @@
 (ros::advertise *chat-flag-topic* std_msgs::Bool 1)
 (ros::rate 10)
 
+(setq *RETHINK_UNIT* 1)
+
 
 (defun before-catch-pose ()
+  (send *pr2* :reset-manip-pose)
   (setq *target-rcoords* (make-cascoords
 			  :pos (float-vector 600 -300 900)
 			  :rpy (float-vector 1.486e-06 1.384e-06 -1.571)))
@@ -25,6 +28,7 @@
   (send *pr2* :larm :move-end-pos #f(0 -150 0) :world)
   (setq *target-hcoords* (scale 0.5 (v+ (send *target-rcoords* :pos) (send *target-lcoords* :pos))))
   (send *pr2* :head :look-at (v- *target-hcoords* #f(0 0 100)))
+  (send *pr2* :torso_lift_joint :joint-angle (- (send *pr2* :torso_lift_joint :joint-angle) 100))
   (send-robot 5000)
   )
 
@@ -105,7 +109,8 @@
 
 
 (defun set-balloon (goal_pos)
-  (setq *X-OFFSET* 300)
+  (setq *DIST-OFFSET* 600)
+  (setq *X-OFFSET* 200)
   ;; 手先の座標はベースリンク基準であることに注意
   (format t "GOAL_POS: ~A~%" goal_pos)
   (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
@@ -114,10 +119,11 @@
   ;; 壁に近づく
   (setq move_vec (float-vector (elt goal_pos 0) (elt goal_pos 1) 0))
   (setq move_vec (v- move_vec (float-vector (elt arm_end_coords 0) (elt arm_end_coords 1) 0)))
-  (setq move_vec (v- move_vec (float-vector *X-OFFSET* 0 0)))
+  (setq move_vec (v- move_vec (float-vector *DIST-OFFSET* 0 0)))
   (setq move_length (norm move_vec))
   (format t "MOVE_VEC: ~A ~A~%" move_vec move_length)
   (send *ri* :go-velocity 0 0 (atan (/ (elt move_vec 1) (elt move_vec 0))))
+  (format t "ROTATE ~A~%" (atan (/ (elt move_vec 1) (elt move_vec 0))))
   (send *ri* :wait-interpolation)
   (while (> move_length 0)
     (if (>= move_length *X-OFFSET*)
@@ -127,6 +133,7 @@
     (send *ri* :wait-interpolation)
     )
   (send *ri* :go-velocity 0 0 (* -1 (atan (/ (elt move_vec 1) (elt move_vec 0)))))
+  ;; (format t "ROTATE ~A~%" (* -1 (atan (/ (elt move_vec 1) (elt move_vec 0)))))
   (send *ri* :wait-interpolation)
   ;; (send *ri* :go-velocity (elt move_vec 0) (elt move_vec 1) 0)
   ;; 腕を動かす
@@ -135,12 +142,14 @@
   (setq goal_lpos (v+ goal_pos (float-vector 0 (/ balloon_width 2) 0)))
   (setq goal_rpos (v- goal_rpos move_vec))
   (setq goal_lpos (v- goal_lpos move_vec))
+  (setq goal_rpos (v- goal_rpos (float-vector (- *DIST-OFFSET* 300) 0 0)))
+  (setq goal_lpos (v- goal_lpos (float-vector (- *DIST-OFFSET* 300) 0 0)))
   ;; デバッグ用
-  (setq r_target (make-cube 40 40 40))
-  (send r_target :locate goal_rpos)
-  (setq l_target (make-cube 40 40 40))
-  (send l_target :locate goal_lpos)
-  (objects (list *pr2* r_target l_target))
+  ;; (setq r_target (make-cube 40 40 40))
+  ;; (send r_target :locate goal_rpos)
+  ;; (setq l_target (make-cube 40 40 40))
+  ;; (send l_target :locate goal_lpos)
+  ;; (objects (list *pr2* r_target l_target))
 
   (format t "RPOS: ~A -> ~A~%" cur_rpos goal_rpos)
   (format t "LPOS: ~A -> ~A~%" cur_lpos goal_lpos)
@@ -173,6 +182,7 @@
   (send *pr2* :torso_lift_joint :joint-angle (- (send *pr2* :torso_lift_joint :joint-angle) up_length))
   (before-catch-pose)
   (send *ri* :go-velocity 0 0 (atan (/ (elt move_vec 1) (elt move_vec 0))))
+  (format t "ROTATE ~A~%" (atan (/ (elt move_vec 1) (elt move_vec 0))))
   (send *ri* :wait-interpolation)
   (setq move_length (norm move_vec))
   (while (> move_length 0)
@@ -182,6 +192,7 @@
     (setq move_length (- move_length *X-OFFSET*))
     (send *ri* :wait-interpolation)
     )
+  (format t "ROTATE ~A~%" (* -1 (atan (/ (elt move_vec 1) (elt move_vec 0)))))
   (send *ri* :go-velocity 0 0 (* -1 (atan (/ (elt move_vec 1) (elt move_vec 0)))))
   (send *ri* :wait-interpolation)
   )
@@ -197,16 +208,16 @@
   (send *wall* :locate (float-vector cur_x 0 2000))
   ;; (setq *co* (instance collision-object-publisher :init))
   ;; (send *co* :add-object *wall* :frame-id "map" :relative-pose (make-coords :pos #f(-2200.0 6300.0 0.0)))
-  (objects (list *pr2* *wall*))
+  ;; (objects (list *pr2* *wall*))
   ;; 飾り付け
   (start-chat)
   (send *ri* :speak-jp "飾り付け楽しみですね")
   (format t "飾り付け楽しみですね~%")
   (while (> (length place_pos_lst) 0)
-    (if (< (length place_pos_lst) 3)
+    (if (< (length place_pos_lst) *RETHINK_UNIT*)
 	(setq unit_num (length place_pos_lst))
-      (setq unit_num 3))
-    (dotimes (i unit_num)  ;; ロボットが3個飾ったら配置再生性
+      (setq unit_num *RETHINK_UNIT*))
+    (dotimes (i unit_num)  ;; ロボットが*RETHINK_UNIT*個飾ったら配置再生性
       (before-catch-pose)
       ;; (catch-balloon)
       (set-balloon (elt place_pos_lst i))

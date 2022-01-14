@@ -89,6 +89,7 @@ class ThinkDecoration:
         # 貼り付け位置
         self.genes = []
         self.best_gene = (-1 * float('inf'), None)
+        self.debug_count = 0
         for _ in range(nums):
             gene = []
             for im in self.imgs:
@@ -311,7 +312,7 @@ class ThinkDecoration:
         best_gene = self.remove_overlap(best_gene, debug=False)
         print(best_gene)
         output_img = self.generate_img(best_gene)
-        cv2.imwrite(DIR_PATH + "share/ga_output.jpg", output_img)
+        cv2.imwrite(DIR_PATH + "share/ga_output_" + str(self.debug_count) + ".jpg", output_img)
         return best_gene
 
 
