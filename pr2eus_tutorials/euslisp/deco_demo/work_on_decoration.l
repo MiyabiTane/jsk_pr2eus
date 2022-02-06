@@ -65,11 +65,11 @@
 
 (defun catch-balloon ()
   ;; ToDo[ここは対話を使うのではなく、自分で認識して取る] --------
-  (send *ri* :speak-jp "風船を渡して下さい")
-  ;; (format t "風船を渡してください~%")
+  ;; (send *ri* :speak-jp "風船を渡して下さい")
+  (format t "風船を渡してください~%")
   (ros::duration-sleep 5)
-  (send *ri* :speak-jp "ありがとうございます")
-  ;; (format t "ありがとうございます~%")
+  ;; (send *ri* :speak-jp "ありがとうございます")
+  (format t "ありがとうございます~%")
   ;; ---------------------------------------------
   ;; start to catch
   (setq l_prev_vec (float-vector 0 0 0))
@@ -108,7 +108,7 @@
   )
 
 
-(defun set-balloon (goal_pos)
+(defun set-balloon (goal_pos send_flag)
   (setq *DIST-OFFSET* 600)
   (setq *X-OFFSET* 200)
   ;; 手先の座標はベースリンク基準であることに注意
@@ -168,7 +168,8 @@
     (send *pr2* :rarm :move-end-pos (v- (v- goal_rpos cur_rpos) #f(0 0 100)) :world)
     (send *pr2* :larm :move-end-pos (v- (v- goal_lpos cur_lpos) #f(0 0 100)) :world))
   (send *pr2* :head :look-at (scale 0.5 (v+ goal_rpos goal_lpos)))
-  (send-robot 4000)
+  (if send_flag
+      (send-robot 4000))
   )
 
 
@@ -220,7 +221,7 @@
     (dotimes (i unit_num)  ;; ロボットが*RETHINK_UNIT*個飾ったら配置再生性
       (before-catch-pose)
       ;; (catch-balloon)
-      (set-balloon (elt place_pos_lst i))
+      (set-balloon (elt place_pos_lst i) t)
       (format t "SET BALLOON~%")
       (push-balloon)
       (go-back)
