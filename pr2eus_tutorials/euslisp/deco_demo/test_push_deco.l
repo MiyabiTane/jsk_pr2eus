@@ -18,11 +18,10 @@
 (ros::advertise *mux-flag-topic* std_msgs::Bool 1)
 (ros::rate 10)
 
-
 (defun send-robot (wait_time)
   (send *ri* :angle-vector (send *pr2* :angle-vector) wait_time)
   (send *ri* :wait-interpolation)
-  (objects (list *pr2*))
+  ;; (objects (list *pr2*))
   )
 
 (defun set-init-pose ()
@@ -34,7 +33,8 @@
 
 ;; global variables
 (setq place_pos_lst '())
-(setq move_x_push 0)  ;; 最後に元の位置に戻るため
+(setq *MOVE_X* 0)  ;; 最後に元の位置に戻るため
+(setq *MOVE_LEN* 0)
 
 ;; set robot
 (pr2-init)
@@ -44,14 +44,18 @@
 (load "work_on_decoration.l")
 
 ;; ---------- main -------------
-(defun set-balloon-update (goal_pos)
-  (setq *X-OFFSET* 800)
-  ;; 手先の座標はベースリンク基準であることに注意
-  (format t "GOAL_POS: ~A~%" goal_pos)
+(defun set-arm-end-coords ()
   (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
   (setq cur_lpos (send (send (send *pr2* :larm :end-coords) :copy-worldcoords) :pos))
   (setq arm_end_coords (scale 0.5 (v+ cur_rpos cur_lpos)))
   (format t "arm_end_coords ~A~%" arm_end_coords)
+  )
+
+(defun set-balloon-update (goal_pos)
+  (setq *X-OFFSET* 800)
+  ;; 手先の座標はベースリンク基準であることに注意
+  (format t "GOAL_POS: ~A~%" goal_pos)
+  (set-arm-end-coords)
   (setq arm_end_x (elt arm_end_coords 0))
   ;; 壁に近づく
   (setq move_vec_orig (float-vector (elt goal_pos 0) (elt goal_pos 1) 0))
@@ -73,6 +77,7 @@
   (convert-2D->3D 320 240)  ;;func in think_decoration.l
   (format t "GO_LENGTH: ~A - ~A~%" cur_x goal_len)
   (setq wall_x cur_x)
+  (setq *MOVE_LEN* wall_x)
   (while (> wall_x goal_len)
     (format t "GO_LENGTH: ~A~%" (- wall_x goal_len))
     (send *ri* :go-velocity (- wall_x goal_len) 0 0)
@@ -90,16 +95,17 @@
   (send *ri* :wait-interpolation)
   (format t "Rotate: ~A~%" (* -1 rot_rad2))
   ;; move torso and arm
-  (setq up_length (- (- (elt goal_pos 2) (elt arm_end_coords 2)) 100))
+  (setq up_length (- (- (elt goal_pos 2) (elt arm_end_coords 2)) 150))
   (format t "UP_LENGTH ~A~%" up_length)
   (setq lift_angle (+ (send *pr2* :torso_lift_joint :joint-angle) up_length))
   (send *pr2* :torso_lift_joint :joint-angle lift_angle)
   (send-robot 4000)
-  (send *pr2* :rarm :move-end-pos #f(50 0 100) :world)
-  (send *pr2* :larm :move-end-pos #f(50 0 100) :world)
+  (send *pr2* :rarm :move-end-pos #f(50 0 150) :world)
+  (send *pr2* :larm :move-end-pos #f(50 0 150) :world)
   (send-robot 4000)
   ;; close wall
   (format t "GO LENGTH: ~A~%" (- (- *X-OFFSET* (+ arm_end_x 50)) 100))
+  (setq *MOVE_X* (- (- *X-OFFSET* (+ arm_end_x 50)) 100))
   (send *ri* :go-velocity (- (- *X-OFFSET* (+ arm_end_x 50)) 100) 0 0)
   (send *ri* :wait-interpolation)
   )
@@ -131,17 +137,6 @@
   (send *pr2* :larm :inverse-kinematics target_coords :move-target ref_coords)
   )
 
-(defun close-wall (offset)
-  (setq pre_x -1)
-  (convert-2D->3D 10 10)  ;;func in think_decoration.l
-  (format t "wall_x ~A~%" cur_x)
-  (setq wall_dist (- cur_x (elt (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos) 0)))
-  (format t "wall_dist ~A~%" wall_dist)
-  (send *ri* :go-velocity (- wall_dist offset) 0 0)
-  (setq move_x_push (+ move_x_push (- wall_dist offset)))
-  (send *ri* :wait-interpolation)
-  )
-
 (defun push-balloon-pose ()
   (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
   (setq cur_lpos (send (send (send *pr2* :larm :end-coords) :copy-worldcoords) :pos))
@@ -163,7 +158,7 @@
   (send-robot 4000)
   )
 
-(defun push-balloon-more-pose ()
+(defun push-balloon-more-pose (arm_end_coords)
   (send *pr2* :rarm :move-end-pos #f(0 -100 0) :world)
   (send *pr2* :larm :move-end-pos #f(0 100 0) :world)
   (send-robot 4000)
@@ -171,22 +166,21 @@
   (send *pr2* :larm :move-end-pos #f(-200 0 0) :world)
   (send-robot 4000)
   (send *pr2* :angle-vector #f(300.894 31.0882 20.6352 91.8899 -69.0461 -348.564 -50.7958 281.54 -31.7928 30.9266 -69.7889 -97.2702 303.286 -40.9615 -326.799 3.184338e-07 35.0618))
-  (send *pr2* :larm :move-end-pos #f(0 0 -100) :world)
+  (send *pr2* :larm :move-end-pos #f(-50 0 -100) :world)
   (send *pr2* :torso_lift_joint :joint-angle lift_angle)  ;; lift_angle <- set-balloon-update
   (send-robot 4000)
-  (send *pr2* :rarm :move-end-pos #f(150 0 0) :world)
-  (send *pr2* :larm :move-end-pos #f(150 0 0) :world)
+  ;; move arm to balloon_pos
+  (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
+  (setq arm_end_coords (v+ arm_end_coords #f(-100 0 100)))
+  (setq move_vec (v- arm_end_coords cur_rpos))
+  (format t "MOVE_VEC: ~A~%" move_vec)
+  (setq move_vec_yz (float-vector 0 (elt move_vec 1) (elt move_vec 2)))
+  (send *pr2* :rarm :move-end-pos move_vec_yz :world)
+  (send *pr2* :larm :move-end-pos move_vec_yz :world)
   (send-robot 4000)
-  ;; (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
-  ;; (setq cur_lpos (send (send (send *pr2* :larm :end-coords) :copy-worldcoords) :pos))
-  ;; (setq balloon_width (- (elt cur_rpos 1) (elt cur_lpos 1)))
-  ;; (setq goal_rpos (v- goal_pos (float-vector 0 (/ balloon_width 2) 0)))
-  ;; (setq goal_lpos (v+ goal_pos (float-vector 0 (/ balloon_width 2) 0)))
-  ;; (setq move_rvec (v- goal_rpos cur_rpos))
-  ;; (setq move_lvec (v- goal_lpos cur_lpos))
-  ;; (send *pr2* :rarm :move-end-pos (float-vector 0 (elt move_rvec 1) (elt move_rvec 2)) :world)
-  ;; (send *pr2* :larm :move-end-pos (float-vector 0 (elt move_lvec 1) (- (elt move_lvec 2) 200)) :world)
-  ;; (send-robot 4000)
+  (send *pr2* :rarm :move-end-pos #f(50 0 0) :world)
+  (send *pr2* :larm :move-end-pos #f(50 0 0) :world)
+  (send-robot 4000)
   )
 
 (defun push-balloon (thresh)
@@ -240,10 +234,40 @@
     (format t "diff: ~A, ~A ~A~%" norm_diff prev_vec force_vector))
   )
 
-(defun main (gazebo sim)  ;; false: 0, true: 1
+(defun go-back ()
+  (send *ri* :go-velocity (* -1 *MOVE_X*) 0 0)
+  (send *ri* :wait-interpolation)
+  (format t "Rotate: ~A~%" rot_rad2)
+  (send *ri* :go-velocity 0 0 rot_rad2)
+  (send *ri* :wait-interpolation)
+
   (send *pr2* :head :look-at #f(500 0 1400))
   (send-robot 4000)
-  (if (= gazebo 1)
+  (convert-2D->3D 320 240)  ;;func in think_decoration.l
+  (setq *MOVE_LEN* (- *MOVE_LEN* 200))  ;; 風船の分
+  (format t "GO_LENGTH: ~A - ~A~%" *MOVE_LEN* cur_x)
+  (setq wall_x cur_x)
+  (while (< wall_x *MOVE_LEN*)
+    (format t "GO_LENGTH: ~A~%" (- wall_x *MOVE_LEN*))
+    (send *ri* :go-velocity (- wall_x *MOVE_LEN*) 0 0)
+    (send *ri* :wait-interpolation)
+    (ros::sleep 5)
+    (convert-2D->3D 320 240)
+    (setq wall_x cur_x)
+    )
+  (when (> wall_x *MOVE_LEN*)
+    (send *ri* :go-velocity (- wall_x *MOVE_LEN*) 0 0)
+    (send *ri* :wait-interpolation)
+    )
+  (format t "Rotate: ~A~%" (* -1 rot_rad2))
+  (send *ri* :go-velocity 0 0 (* -1 rot_rad2))
+  (send *ri* :wait-interpolation)
+  )
+
+(defun main_sim (use_gazebo)  ;; false: 0, true: 1
+  (send *pr2* :head :look-at #f(500 0 1400))
+  (send-robot 4000)
+  (if (= use_gazebo 1)
       (progn
 	(setq pre_x -1)
 	(convert-2D->3D 320 240)  ;;func in think_decoration.l
@@ -253,17 +277,15 @@
     (setq goal_pos #f(1500 -100 1000)))
   (format t "== CATCH BALLOON~%")
   (before-catch-pose) ;; func in work_on_decoration.l
-  (if (= sim 1)
-      (progn
-	(send *pr2* :rarm :move-end-pos #f(0 80 0) :world)
-	(send *pr2* :larm :move-end-pos #f(0 -80 0) :world)
-	(send-robot 4000))
-    (catch-balloon))
+  ;; (catch-balloon)
+  (send *pr2* :rarm :move-end-pos #f(0 80 0) :world)
+  (send *pr2* :larm :move-end-pos #f(0 -80 0) :world)
+  (send-robot 4000)
   (send *pr2* :rarm :move-end-pos #f(0 20 0) :world)
   (send *pr2* :larm :move-end-pos #f(0 -20 0) :world)
   (send-robot 4000)
   (format t "== SET BALLOON~%")
-  (if (= gazebo 1)
+  (if (= use_gazebo 1)
       (set-balloon-update goal_pos)
     (progn
       (send *pr2* :rarm :move-end-pos #f(100 0 100) :world)
@@ -271,27 +293,66 @@
       (send-robot 4000)))
   (format t "== PUSH BALLOON~%")
   (push-balloon-pose)
-  (if (= sim 1)
-      (progn
-	(send *pr2* :rarm :move-end-pos #f(50 0 0) :world)
-	(send *pr2* :larm :move-end-pos #f(50 0 0) :world)
-	(send-robot 4000))
-    (push-balloon 25))
-  (if (= gazebo 0)
+  ;; (push-balloon 25)
+  (send *pr2* :rarm :move-end-pos #f(50 0 0) :world)
+  (send *pr2* :larm :move-end-pos #f(50 0 0) :world)
+  (send-robot 4000)
+  (if (= use_gazebo 0)
       (setq lift_angle (send *pr2* :torso_lift_joint :joint-angle)))
+
+  (set-arm-end-coords)
   (format t "== PUSH AGAIN~%")
-  (push-balloon-more-pose)
-  (if (= sim 1)
-      (progn
-	(send *pr2* :rarm :move-end-pos #f(0 80 0) :world)
-	(send *pr2* :larm :move-end-pos #f(0 -80 0) :world)
-	(send-robot 4000))
-    (push-balloon-r 25))
-  (send *pr2* :rarm :move-end-pos #f(-200 0 0) :world)
-  (send *ri* :go-velocity -500 0 0)
-  (send *ri* :wait-interpolation)
+  (push-balloon-more-pose arm_end_coords)
+  ;;  (push-balloon-r 25)
+  (send *pr2* :rarm :move-end-pos #f(100 0 0) :world)
+  (send-robot 4000)
+  (ros::sleep 2)
+  (send *pr2* :rarm :move-end-pos #f(-100 0 0) :world)
+  (send-robot 4000)
+  ;; go original position
+  (if (= use_gazebo 1)
+      (go-back)
+    (progn
+      (send *ri* :go-velocity -500 0 0)
+      (send *ri* :wait-interpolation))
+    )
   )
-(main 1 1)  ;; gazebo, sim
+
+(defun main()
+  (send *pr2* :head :look-at #f(500 0 1400))
+  (send-robot 4000)
+  (setq pre_x -1)
+  (convert-2D->3D 320 240)  ;;func in think_decoration.l
+  (setq wall_x cur_x)
+  (format t "wall_x: ~A~%" wall_x)
+  (setq goal_pos (float-vector wall_x -100 1000))
+
+  (format t "== CATCH BALLOON~%")
+  (before-catch-pose) ;; func in work_on_decoration.l
+  (catch-balloon)
+  (send *pr2* :rarm :move-end-pos #f(0 20 0) :world)
+  (send *pr2* :larm :move-end-pos #f(0 -20 0) :world)
+  (send-robot 4000)
+
+  (format t "== SET BALLOON~%")
+  (set-balloon-update goal_pos)
+
+  (format t "== PUSH BALLOON~%")
+  (push-balloon-pose)
+  (push-balloon 25)
+
+  (set-arm-end-coords)
+  (format t "== PUSH AGAIN~%")
+  (push-balloon-more-pose arm_end_coords)
+  (push-balloon-r 25)
+  (send *pr2* :rarm :move-end-pos #f(-100 0 0) :world)
+  (send-robot 4000)
+
+  ;; go original position
+  (go-back)
+  )
+
+;; (main_sim 1)  ;; args: use_gazebo
 
 ;; (setq goal_pos #f(1429.53 -100.688 1000.87))
 
