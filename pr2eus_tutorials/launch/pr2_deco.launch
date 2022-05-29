@@ -52,13 +52,12 @@
   </node>
 
   <!-- ChaPlus -->
-  <node name="relay_sound"
+  <!-- node name="relay_sound"
 	pkg="pr2eus_tutorials" type="relay_sound_with_flag.py"
-	output="screen" respawn="true">
+	output="screen" respawn="false">
     <remap from="~input" to="/speech_to_text" />
-    <!-- remap from="~input/interrupt" to="/kinect_head/rgb/throttled/image_rect_color" / -->
     <remap from="~output" to="/request" />
-  </node>
+   </node -->
 
   <arg name="chatbot_engine" default="Chaplus" />
   <node pkg="chaplus_ros" type="chaplus_ros_custom.py" name="chaplus_ros"

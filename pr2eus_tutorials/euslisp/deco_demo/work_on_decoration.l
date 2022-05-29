@@ -63,7 +63,7 @@
     (ros::sleep))
   )
 
-(defun catch-balloon ()
+(defun catch-balloon (thresh)
   ;; ToDo[ここは対話を使うのではなく、自分で認識して取る] --------
   ;; (send *ri* :speak-jp "風船を渡して下さい")
   (format t "風船を渡してください~%")
@@ -76,7 +76,7 @@
   (setq r_prev_vec (float-vector 0 0 0))
   (setq l_norm_diff 0)
   (setq r_norm_diff 0)
-  (while (or (< l_norm_diff 3) (< r_norm_diff 3))
+  (while (or (< l_norm_diff thresh) (< r_norm_diff thresh))
     ;; bring arm closer
     (send *pr2* :rarm :move-end-pos #f(0 10 0) :world)
     (send *pr2* :larm :move-end-pos #f(0 -10 0) :world)
