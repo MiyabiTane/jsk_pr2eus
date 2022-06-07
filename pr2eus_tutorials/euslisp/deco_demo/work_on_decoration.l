@@ -29,7 +29,7 @@
   (setq *target-hcoords* (scale 0.5 (v+ (send *target-rcoords* :pos) (send *target-lcoords* :pos))))
   (send *pr2* :head :look-at (v- *target-hcoords* #f(0 0 100)))
   (send *pr2* :torso_lift_joint :joint-angle (- (send *pr2* :torso_lift_joint :joint-angle) 100))
-  (send-robot 5000)
+  ;; (send-robot 5000)
   )
 
 

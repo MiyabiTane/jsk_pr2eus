@@ -1,6 +1,6 @@
 <launch>
   <arg name="gui" default="true"/>
-  <arg name="run_rviz" default="true" />
+  <arg name="run_rviz" default="false" />
   <arg name="gazebo" default="false" />
   <arg name="publish_objects_tf" default="true" />
   <arg name="launch_tracking" default="false" />
@@ -19,6 +19,16 @@
 	  args="/speech_to_text /speech_to_text_google /speech_to_text_julius /speech_to_text_other" >
       <remap from="mux" to="speech_to_text_mux"/>
     </node>
+    <!-- Spawn models into gazebo -->
+    <node name="spawn_demo_cube_yellow" pkg="gazebo_ros" type="spawn_model"
+          args="-file $(find pr2eus_tutorials)/models/demo_cube_yellow/model.sdf -sdf
+                -x -1.3 -y 0.0 -z 0.8 -model demo_cube_yellow" />
+    <node name="spawn_demo_cube_red" pkg="gazebo_ros" type="spawn_model"
+          args="-file $(find pr2eus_tutorials)/models/demo_cube_red/model.sdf -sdf
+                -x -1.3 -y 0.5 -z 0.8 -model demo_cube_red" />
+    <node name="spawn_demo_cube_green" pkg="gazebo_ros" type="spawn_model"
+          args="-file $(find pr2eus_tutorials)/models/demo_cube_green/model.sdf -sdf
+                -x -1.3 -y -0.5 -z 0.8 -model demo_cube_green" />
   </group>
 
   <!-- group unless="$(arg gazebo)">
@@ -59,13 +69,13 @@
     <remap from="~output" to="/request" />
    </node -->
 
-  <arg name="chatbot_engine" default="Chaplus" />
+  <!-- arg name="chatbot_engine" default="Chaplus" />
   <node pkg="chaplus_ros" type="chaplus_ros_custom.py" name="chaplus_ros"
         output="screen" >
     <rosparam subst_value="true">
       chatbot_engine: $(arg chatbot_engine)
     </rosparam>
-  </node>
+  </node -->
 
   <!-- node to convert /response (std_msgs/String) to /robotsound_jp (sound_play/SoundRequest) -->
   <node pkg="topic_tools" type="relay_field" name="string_to_sound_request"

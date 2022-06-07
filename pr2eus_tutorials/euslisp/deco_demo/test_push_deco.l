@@ -333,6 +333,7 @@
 
   (format t "== CATCH BALLOON~%")
   (before-catch-pose) ;; func in work_on_decoration.l
+  (send-robot 4000)
   (catch-balloon 1)
   ;; (send *pr2* :rarm :move-end-pos #f(0 5 0) :world)
   ;; (send *pr2* :larm :move-end-pos #f(0 -5 0) :world)
