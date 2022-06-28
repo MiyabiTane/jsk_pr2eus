@@ -32,12 +32,37 @@
   </group>
 
   <!-- group unless="$(arg gazebo)">
-    <include file="$(find pr2_machine)/$(env ROBOT).machine" />
-  </group -->
+    <include file="$(find pr2_machine)/$(env ROBOT).machine" / -->
+  <!-- /group -->
+
+  <!-- extract attention points -->
+  <node name="attention_clipper"
+        pkg="nodelet" type="nodelet" respawn="true"
+        args="load jsk_pcl/AttentionClipper $(arg manager)">
+    <remap from="~input/points" to="/kinect_head/depth_registered/throttled/points" />
+    <rosparam>
+      initial_pos: [1.0, 0, 0.5]
+      initial_rot: [0, 0, 0]
+      dimension_x: 2.0
+      dimension_y: 0.6
+      dimension_z: 1.5
+      frame_id: base_footprint
+    </rosparam >
+  </node>
+
+  <node name="extract_indices"
+        pkg="nodelet" type="nodelet" respawn="true"
+        args="load jsk_pcl/ExtractIndices $(arg manager)">
+    <remap from="~input" to="/kinect_head/depth_registered/throttled/points" />
+    <remap from="~indices" to="attention_clipper/output/point_indices" />
+    <rosparam>
+      keep_organized: true
+    </rosparam>
+  </node>
 
   <!-- tabletop_object_detector -->
   <include file="$(find jsk_pcl_ros)/sample/tabletop_object_detector.launch">
-    <arg name="input" value="/kinect_head/depth_registered/throttled/points" />
+    <arg name="input" value="/extract_indices/output" />
     <arg name="sensor_frame" value="/head_mount_kinect_rgb_optical_frame" />
     <arg name="manager" value="$(arg manager)" />
     <arg name="machine" value="$(arg machine)" />

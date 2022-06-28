@@ -24,6 +24,12 @@
   (send *ri* :wait-interpolation)
   )
 
+(defun set-arm-end-coords ()
+  (setq cur_rpos (send (send (send *pr2* :rarm :end-coords) :copy-worldcoords) :pos))
+  (setq cur_lpos (send (send (send *pr2* :larm :end-coords) :copy-worldcoords) :pos))
+  (setq arm_end_coords (scale 0.5 (v+ cur_rpos cur_lpos)))
+  )
+
 (defun set-init-pose ()
   ;; (send *pr2* :reset-manip-pose)
   ;; (send *pr2* :torso_lift_joint :joint-angle (- (send *pr2* :torso_lift_joint :joint-angle) 100))
@@ -33,7 +39,7 @@
   )
 
 ;; global variables
-(setq deco_pos_lst '())
+(setq deco_coords_lst '())
 (setq deco_size_lst '())
 (setq place_pos_lst '())
 
@@ -47,13 +53,12 @@
 (load "work_on_decoration.l")
 
 ;; main ------------
-;; (set-init-pose)
+(set-init-pose)
 (before-recog-pose)
-(find-decoration)
+;; (find-decoration)
 
 ;; (set-init-pose)
 ;; (format t "set pose ~%")
-
 ;; (get-place-pos)
 ;; (setq place_pos_lst (list #f(1431.12 480.798 1000.08) #f(1429.85 -126.574 1507.49) #f(1430.41 164.55 1262.37) #f(1429.52 -266.222 1173.37)))
 
