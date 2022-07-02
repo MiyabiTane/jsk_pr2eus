@@ -44,7 +44,7 @@
       initial_pos: [1.0, 0, 0.5]
       initial_rot: [0, 0, 0]
       dimension_x: 2.0
-      dimension_y: 0.6
+      dimension_y: 2.0
       dimension_z: 1.5
       frame_id: base_footprint
     </rosparam >
