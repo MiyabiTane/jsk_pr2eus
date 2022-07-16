@@ -9,6 +9,8 @@
   <arg name="physics" default="ode" />
   <arg name="machine" value="localhost" />
   <!-- arg name="machine" default="c2" / -->
+
+  <arg name="input_points" default="/kinect_head/depth_registered/throttled/points" />
   
   <group if="$(arg gazebo)">
     <include file="$(find pr2eus_tutorials)/launch/gazebo/pr2_deco_scene.launch">
@@ -35,11 +37,53 @@
     <include file="$(find pr2_machine)/$(env ROBOT).machine" / -->
   <!-- /group -->
 
+  <!-- calculate normal vector of wall -->
+  <node name="attention_clipper_wall"
+        pkg="nodelet" type="nodelet" respawn="true"
+        args="load jsk_pcl/AttentionClipper $(arg manager)">
+    <remap from="~input/points" to="$(arg input_points)" />
+    <rosparam>
+      initial_pos: [1.0, 0, 1.2]
+      initial_rot: [0, 0, 0]
+      dimension_x: 3.0
+      dimension_y: 3.0
+      dimension_z: 0.5
+      frame_id: base_footprint
+    </rosparam >
+  </node>
+
+  <node name="extract_indices_wall"
+        pkg="nodelet" type="nodelet" respawn="true"
+        args="load jsk_pcl/ExtractIndices $(arg manager)">
+    <remap from="~input" to="/kinect_head/depth_registered/throttled/points" />
+    <remap from="~indices" to="attention_clipper/output/point_indices" />
+    <rosparam>
+      keep_organized: true
+    </rosparam>
+  </node>
+
+  <node name="multi_plane_estimate_wall" pkg="nodelet" type="nodelet"
+        args="load jsk_pcl/OrganizedMultiPlaneSegmentation $(arg manager)"
+        output="screen"
+        machine="$(arg machine)">
+    <remap from="~input" to="extract_indices_wall/output" />
+    <rosparam>
+      max_curvature: 0.01
+      estimate_normal: true
+    </rosparam>
+  </node>
+
+  <node name="plane_normal_vector"
+	pkg = "pr2eus_tutorials" type="plane_normal_vector.py"
+	output = "screen" respawn="false">
+    <remap from="~input" to="/multi_plane_estimate_wall/output_refined_polygon" />
+  </node>
+
   <!-- extract attention points -->
   <node name="attention_clipper"
         pkg="nodelet" type="nodelet" respawn="true"
         args="load jsk_pcl/AttentionClipper $(arg manager)">
-    <remap from="~input/points" to="/kinect_head/depth_registered/throttled/points" />
+    <remap from="~input/points" to="$(arg input_points)" />
     <rosparam>
       initial_pos: [1.0, 0, 0.5]
       initial_rot: [0, 0, 0]
