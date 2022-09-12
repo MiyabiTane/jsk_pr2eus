@@ -53,16 +53,16 @@
     )
   )
 
-;; (defun go-vel-rotate (move_rot)  ;; not correct -> use in rotate-ref-wall
-;;   ;; memo: (/ pi 6) -> 2100, (/ pi 4) -> 2650
-;;   (setq move_time 2650)
-;;   (cond ((< (abs move_rot) (/ pi 6))
-;; 	 (setq move_time (abs (* (/ move_rot (/ pi 6)) 2100))))
-;; 	((< (abs move_rot) (/ pi 4))
-;; 	 (setq move_time (+ 2100 (* 550 (/ (/ pi 12) (- move_rad (/ pi 6))))))))
-;;   (format t "rot: ~A, time: ~A~%" move_rot move_time)
-;;   (send *ri* :go-velocity 0 0 move_rot move_time :wait t)
-;;   )
+(defun go-vel-rotate (move_rad)
+  ;;warning!! if the degree is large, this funcdoes not correct
+  ;; memo: (/ pi 6) -> 2100, (/ pi 4) -> 2650
+  (setq move_time 2650)
+  (cond ((< (abs move_rad) (/ pi 6))
+ 	 (setq move_time (abs (* (/ move_rad (/ pi 6)) 2100))))
+ 	((< (abs move_rad) (/ pi 4))
+ 	 (setq move_time (+ 2100 (* 550 (/ (- move_rad (/ pi 6)) (/ pi 12)))))))
+  (send *ri* :go-velocity 0 0 move_rad move_time :wait t)
+  )
 
 (defun rotate-ref-box ()
   ;; (send norm_coords_cp :locate #f(500 0 0) :world)
@@ -97,19 +97,9 @@
 (defun go-vel-linear (move_x)
   ;; 818.54 -> 3000ms (818.54 -> 820)
   (setq move_time (abs (* (/ move_x 820.0) 3000)))
+  ;; (format t "go-vel-linear move: ~A, time: ~A~%" move_x move_time)
   (send *ri* :go-velocity move_x 0 0 move_time :wait t)
   ;; (send *ri* :wait-interpolation)
-  )
-
-(defun test-go-vel (time)
-  (setq pre_x 0)
-  (convert-2D->3D 320 240)
-  (setq wall_x cur_x)
-  (setq arm_end_pos (set-arm-end-pos))
-  (setq move_x (- cur_x (elt arm_end_pos 0)))
-  (format t "move_x ~A~%" move_x)
-  (send *ri* :go-velocity move_x 0 0 time :wait t)
-  (send *ri* :wait-interpolation)
   )
 
 (defun set-init-pose ()
@@ -137,9 +127,9 @@
 (load "work_on_decoration.l")
 
 ;; main ------------
-;; (set-init-pose)
-;; (before-recog-pose)
-;; (find-decoration)
+(set-init-pose)
+(before-recog-pose)
+(recognize-decoration)
 
 ;; (set-init-pose)
 ;; (format t "set pose ~%")
