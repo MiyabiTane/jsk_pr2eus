@@ -2,5 +2,6 @@ std_msgs/Header header
 sensor_msgs/Image back_img
 sensor_msgs/Image deco_imgs
 jsk_recognition_msgs/BoundingBoxArray deco_bboxes
-jsk_recognition_msgs/BoundingBoxArray back_bbox
+geometry_msgs/Point bimg_lt_pos
+geometry_msgs/Point bimg_rb_pos
 geometry_msgs/Point visual_point

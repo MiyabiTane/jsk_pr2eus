@@ -13,7 +13,7 @@
 
 
 (defun pub-img ()
-  (setq pub-msg (instance pr2eus_tutorials::DecoImages :init))
+  (setq pub-msg (instance pr2eus_tutorials::DecoImages :init))x
   ;; Subscribe image_raw
   (setq *image_raw-msg*
 	(one-shot-subscribe "/kinect_head/rgb/throttled/image_rect_color"
@@ -24,33 +24,33 @@
   )
 
 
-(defun screen-pos-cb (msg)
-  (setq coords (make-coords :pos (ros::tf-point->pos (send msg :point))))
-  (send coords :transform
-	(send *tfl* :lookup-transform *base-frame* *camera-frame* (ros::time 0)) :world)
-  (setq place_pos (send coords :pos))
-  (setq cur_x (elt place_pos 0))
-  (when (not (= pre_x cur_x))
-    (setq flag 1)
-    (setq pre_x cur_x))
-  )
+;; (defun screen-pos-cb (msg)
+;;   (setq coords (make-coords :pos (ros::tf-point->pos (send msg :point))))
+;;   (send coords :transform
+;; 	(send *tfl* :lookup-transform *base-frame* *camera-frame* (ros::time 0)) :world)
+;;   (setq place_pos (send coords :pos))
+;;   (setq cur_x (elt place_pos 0))
+;;   (when (not (= pre_x cur_x))
+;;    (setq flag 1)
+;;     (setq pre_x cur_x))
+;;  )
 
 
-(defun convert-2D->3D (x y)
-  ;; use pointcloud_screenpoint_nodelet
-  (ros::subscribe *screenpoint-sub-topic* geometry_msgs::PointStamped #'screen-pos-cb)
-  (setq pub-msg (instance geometry_msgs::PointStamped :init))
-  (send pub-msg :header :stamp (ros::time-now))
-  (send pub-msg :header :frame_id *camera-frame*)
-  (send (send pub-msg :point) :x x)
-  (send (send pub-msg :point) :y y)
-  (setq flag 0)
-  (while (= flag 0)
-    (ros::publish *screenpoint-pub-topic* pub-msg)
-    (ros::spin-once)
-    (ros::sleep))
-  ;; result 3D pos: place_pos
-  )
+;; (defun convert-2D->3D (x y)
+;;   ;; use pointcloud_screenpoint_nodelet
+;;   (ros::subscribe *screenpoint-sub-topic* geometry_msgs::PointStamped #'screen-pos-cb)
+;;   (setq pub-msg (instance geometry_msgs::PointStamped :init))
+;;   (send pub-msg :header :stamp (ros::time-now))
+;;   (send pub-msg :header :frame_id *camera-frame*)
+;;   (send (send pub-msg :point) :x x)
+;;   (send (send pub-msg :point) :y y)
+;;   (setq flag 0)
+;;   (while (= flag 0)
+;;     (ros::publish *screenpoint-pub-topic* pub-msg)
+;;     (ros::spin-once)
+;;     (ros::sleep))
+;;   ;; result 3D pos: place_pos
+;;   )
 
 
 (defun deco-pos-cb (msg)

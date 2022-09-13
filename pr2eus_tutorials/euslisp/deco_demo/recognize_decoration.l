@@ -1,3 +1,5 @@
+#!/usr/bin/env roseus
+
 ;; set pub sub topics
 (setq *dimgs-pub-topic* "/save_deco_imgs/input")
 
@@ -12,13 +14,6 @@
   (send *pr2* :head :look-at #f(500 0 1200))
   (send *pr2* :torso_lift_joint :joint-angle cur_torso_angle)
   ;; (send-robot 5000)
-  )
-
-(defun move-arm-out-of-view ()
-  (setq cur_torso_joint (send *pr2* :torso_lift_joint :joint-angle))
-  (send *pr2* :angle-vector #f(11.5 80.0 73.2972 3.97331 -121.542 -170.266 -5.72958 0.0 -80.0 73.297 -3.98539 -121.542 170.26 -5.72958 0.0 0.0 11.8773))
-  (send *pr2* :torso_lift_joint :joint-angle cur_torso_joint)
-  (send *pr2* :head :look-at #f(500 0 1200))
   )
 
 (defun tf-pose->coords (frame_id pose)
@@ -92,7 +87,7 @@
 	 (fin_flag 0))
     (dotimes (i 5)
       (go-vel-rotate (/ pi 6)))
-    (move-arm-out-of-view)
+    (move-arm-out-of-view #f(500 0 1200))
     (send-robot 5000)
     (while (= fin_flag 0)
       (find-boxes)
