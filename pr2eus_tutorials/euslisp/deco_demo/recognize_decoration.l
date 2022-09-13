@@ -1,5 +1,4 @@
 ;; set pub sub topics
-(ros::roseus-add-msgs "pr2eus_tutorials")
 (setq *dimgs-pub-topic* "/save_deco_imgs/input")
 
 (defvar *bounding-box-list* "/segmentation_decomposer/boxes")
@@ -12,7 +11,14 @@
   (before-catch-pose)
   (send *pr2* :head :look-at #f(500 0 1200))
   (send *pr2* :torso_lift_joint :joint-angle cur_torso_angle)
-  (send-robot 5000)
+  ;; (send-robot 5000)
+  )
+
+(defun move-arm-out-of-view ()
+  (setq cur_torso_joint (send *pr2* :torso_lift_joint :joint-angle))
+  (send *pr2* :angle-vector #f(11.5 80.0 73.2972 3.97331 -121.542 -170.266 -5.72958 0.0 -80.0 73.297 -3.98539 -121.542 170.26 -5.72958 0.0 0.0 11.8773))
+  (send *pr2* :torso_lift_joint :joint-angle cur_torso_joint)
+  (send *pr2* :head :look-at #f(500 0 1200))
   )
 
 (defun tf-pose->coords (frame_id pose)
@@ -43,6 +49,7 @@
   )
 
 (defun find-boxes ()
+  (setq bboxes '())
   (ros::duration-sleep 1.0)
   (setq bboxes_msg (one-shot-subscribe *bounding-box-list*
 				       jsk_recognition_msgs::BoundingBoxArray
@@ -81,21 +88,74 @@
   )
 
 (defun find-decoration ()
-  (setq bboxes '())
-  (dotimes (i 6)
-    (go-vel-rotate (/ pi 6)))
-  (find-boxes)
-  ;; (when (= (length bboxes) 0)
-  ;;   (go-vel-rotate (/ pi 10))
-  ;;   (when (= (length bboxes 0))
-  ;;     (go-vel-rotate (* -1 (/ pi 5)))
-  ;;     ))
-  (while (= (length bboxes) 0)
-    (go-vel-rotate (/ pi 10))
-    (find-boxes)
-    )
-  (format t "find ~A boxes~%" (length bboxes))
+  (let* ((deco_count 0)
+	 (fin_flag 0))
+    (dotimes (i 5)
+      (go-vel-rotate (/ pi 6)))
+    (move-arm-out-of-view)
+    (send-robot 5000)
+    (while (= fin_flag 0)
+      (find-boxes)
+      (format t "find ~A boxes~%" (length bboxes))
+      (when (< (length bboxes) deco_count)
+	(go-vel-rotate (* -1 (/ pi 9)))
+	(find-boxes)
+	(format t "find ~A boxes~%" (length bboxes))
+	(setq fin_flag 1)
+	)
+      (when (= fin_flag 0)
+	(setq deco_count (length bboxes))
+	(go-vel-rotate (/ pi 9)))
+      )
+    ))
+
+(defun get-deco-image ()
+  ;; Subscribe image_raw
+  (setq *image-raw-msg*
+	(one-shot-subscribe "/kinect_head/rgb/throttled/image_rect_color"
+			    sensor_msgs::Image
+			    :after-stamp (ros::time-now)))
+  (send dimg_pub_msg :deco_imgs *image-raw-msg*)
+  (send dimg_pub_msg :deco_bboxes bboxes)
+  (setq visual_point_msg (instance geometry_msgs::Point :init))
+  (send visual_point_msg :x 500)
+  (send visual_point_msg :y 0)
+  (send visual_point_msg :z 1200)
+  (send dimg_pub_msg :visual_point visual_point_msg)
   )
+
+(defun recognize-decoration ()
+  (before-recog-pose)
+  (send-robot 5000)
+  (find-decoration)
+  (get-deco-image)
+  )
+
+;; send images to think_deco node
+
+;; ---------------------------------------------------
+;; arms out of view pose
+;; (before-recog-pose)
+;; (send *pr2* :l_shoulder_pan_joint :joint-angle 80)
+;; (send *pr2* :r_shoulder_pan_joint :joint-angle -80)
+;; (send *pr2* :r_wrist_roll_joint :joint-angle 0)
+;; (send *pr2* :r_wrist_flex_joint :joint-angle 0)
+;; (send *pr2* :r_elbow_flex_joint :joint-angle -125)
+;; (send *pr2* :l_wrist_roll_joint :joint-angle 0)
+;; (send *pr2* :l_wrist_flex_joint :joint-angle 0)
+;; (send *pr2* :l_elbow_flex_joint :joint-angle -125)
+
+(defun test-go-vel ()
+   (setq pre_x 0)
+   (convert-2D->3D 320 240)
+   (setq wall_x cur_x)
+   (setq arm_end_pos (set-arm-end-pos))
+   (setq move_x (- cur_x (elt arm_end_pos 0)))
+   (format t "move_x ~A~%" move_x)
+   ;; (send *ri* :go-velocity move_x 0 0 time :wait t)
+   ;; (send *ri* :wait-interpolation)
+   (go-vel-linear move_x)
+   )
 
 (defun close-table ()
   (setq close_offset_x 100)
@@ -124,70 +184,3 @@
   (setq look_at_pos (set-arm-end-pos))  ;; use in get-deco-image
   (format t "look at ~A~%" look_at_pos)
   )
-
-(defun get-deco-image ()
-  ;; move arm out of camera view
-  (setq cur_torso_joint (send *pr2* :torso_lift_joint :joint-angle))
-  (send *pr2* :angle-vector #f(11.5 80.0 73.2972 3.97331 -121.542 -170.266 -5.72958 0.0 -80.0 73.297 -3.98539 -121.542 170.26 -5.72958 0.0 0.0 11.8773))
-  (send *pr2* :torso_lift_joint :joint-angle cur_torso_joint)
-  (send *pr2* :head :look-at look_at_pos)  ;; look_at_pos <- close-table
-  (send-robot 4000)
-  ;; get deco images
-  (setq found_y -100)
-  (setq look_y 500)
-  (while (> look_y -300)
-    (send *pr2* :head :look-at (v+ look_at_pos (float-vector 0 look_y 0)))
-    (send-robot 1000)
-    (find-boxes)
-    (when (> (length bboxes) 0)
-      (setq coords_dims_lst (bbox->lst (elt bboxes 0)))
-      (setq deco_pos (send (elt coords_dims_lst 0) :pos))
-      (setq found_y (elt deco_pos 1))
-      (when (< (abs found_y) 10)
-	(format t "find decoration pos: ~A~%" deco_pos)
-	;; save deco info
-	(setq image_raw-msg
-	      (one-shot-subscribe *rgb-image-topic*
-				  sensor_msgs::Image
-				  :after-stamp (ros::time-now)))
-	(setq deco_image_lst (append deco_image_lst image_raw_msg))
-	(setq deco_image_pos_lst (append deco_image_pos_lst deco_pos)))
-      (setq found_y -100)
-      )
-    (setq look_y (- look_y 20))
-    )
-  (format t "deco_image_pos_lst ~A~%" deco_image_pos_lst)
-  )
-
-(defun recognize-decoration ()
-  (find-decoration)
-  (close-table)
-  )
-
-
-
-;; send images to think_deco node
-
-;; ---------------------------------------------------
-;; arms out of view pose
-;; (before-recog-pose)
-;; (send *pr2* :l_shoulder_pan_joint :joint-angle 80)
-;; (send *pr2* :r_shoulder_pan_joint :joint-angle -80)
-;; (send *pr2* :r_wrist_roll_joint :joint-angle 0)
-;; (send *pr2* :r_wrist_flex_joint :joint-angle 0)
-;; (send *pr2* :r_elbow_flex_joint :joint-angle -125)
-;; (send *pr2* :l_wrist_roll_joint :joint-angle 0)
-;; (send *pr2* :l_wrist_flex_joint :joint-angle 0)
-;; (send *pr2* :l_elbow_flex_joint :joint-angle -125)
-
-(defun test-go-vel ()
-   (setq pre_x 0)
-   (convert-2D->3D 320 240)
-   (setq wall_x cur_x)
-   (setq arm_end_pos (set-arm-end-pos))
-   (setq move_x (- cur_x (elt arm_end_pos 0)))
-   (format t "move_x ~A~%" move_x)
-   ;; (send *ri* :go-velocity move_x 0 0 time :wait t)
-   ;; (send *ri* :wait-interpolation)
-   (go-vel-linear move_x)
-   )

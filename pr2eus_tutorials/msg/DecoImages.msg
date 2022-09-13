@@ -1,4 +1,6 @@
 std_msgs/Header header
 sensor_msgs/Image back_img
-sensor_msgs/Image[] deco_imgs
-std_msgs/Float64[] deco_scales
+sensor_msgs/Image deco_imgs
+jsk_recognition_msgs/BoundingBoxArray deco_bboxes
+jsk_recognition_msgs/BoundingBoxArray back_bbox
+geometry_msgs/Point visual_point

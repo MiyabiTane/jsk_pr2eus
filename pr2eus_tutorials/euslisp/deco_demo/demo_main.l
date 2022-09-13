@@ -15,12 +15,12 @@
 (ros::load-ros-package "geometry_msgs")
 (ros::load-ros-package "std_msgs")
 (ros::load-ros-package "jsk_recognition_msgs")
+(ros::roseus-add-msgs "pr2eus_tutorials")
 
 (defvar *camera-frame-id* "head_mount_kinect_rgb_optical_frame")
 (defvar *base-frame-id* "/base_footprint")
 (setq *mux-flag-topic* "/relay_sound/input/mux_flag")
 (setq *plane-norm-topic* "/plane_normal_vector/output")
-
 
 (ros::advertise *mux-flag-topic* std_msgs::Bool 1)
 (ros::rate 10)
@@ -114,6 +114,7 @@
 (setq deco_image_lst '())
 (setq deco_image_pos_lst '())
 (setq place_pos_lst '())
+(setq dimg_pub_msg (instance pr2eus_tutorials::DecoImages :init))
 
 ;; set robot
 (pr2-init)
@@ -127,8 +128,6 @@
 (load "work_on_decoration.l")
 
 ;; main ------------
-(set-init-pose)
-(before-recog-pose)
 (recognize-decoration)
 
 ;; (set-init-pose)
