@@ -15,7 +15,8 @@
 (ros::load-ros-package "geometry_msgs")
 (ros::load-ros-package "std_msgs")
 (ros::load-ros-package "jsk_recognition_msgs")
-(ros::roseus-add-msgs "pr2eus_tutorials")
+(ros::load-ros-package "pr2eus_tutorials")
+;; (ros::roseus-add-msgs "pr2eus_tutorials")
 
 (defvar *camera-frame-id* "head_mount_kinect_rgb_optical_frame")
 (defvar *base-frame-id* "/base_footprint")
@@ -30,7 +31,7 @@
 (setq deco_image_lst '())
 (setq deco_image_pos_lst '())
 (setq place_pos_lst '())
-(setq dimg_pub_msg (instance pr2eus_tutorials::DecoImages :init))
+(setq dimg_req_msg (instance pr2eus_tutorials::DecoImgsRequest :init))
 (setq pre_x -1)
 
 ;; set robot

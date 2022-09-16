@@ -123,4 +123,5 @@
     (ros::spin-once)
     (ros::sleep))
   ;; result 3D pos: result_3d_pos
+  (ros::unsubscribe *screenpoint-sub-topic*)
   )

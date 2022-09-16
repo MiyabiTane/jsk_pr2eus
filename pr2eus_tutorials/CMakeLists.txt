@@ -6,9 +6,9 @@ add_message_files(DIRECTORY msg FILES
   DecoImages.msg
   )
 
-# add_service_files(DIRECTORY srv FILES
-#   MuxSelect.srv
-# )
+add_service_files(DIRECTORY srv FILES
+  DecoImgs.srv
+)
 
 generate_messages(
   DEPENDENCIES
@@ -17,7 +17,7 @@ generate_messages(
 
 catkin_package()
 
-install(DIRECTORY euslisp launch scripts
+install(DIRECTORY euslisp launch scripts srv
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
   USE_SOURCE_PERMISSIONS
   )

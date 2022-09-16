@@ -111,14 +111,14 @@
 	  (one-shot-subscribe "/kinect_head/rgb/throttled/image_rect_color"
 			      sensor_msgs::Image
 			      :after-stamp (ros::time-now)))
-    (send dimg_pub_msg :deco_imgs *image-raw-msg*)
+    (send dimg_req_msg :decos_img *image-raw-msg*)
     (send bbox_array_msg :header bboxes_header)
     (send bbox_array_msg :boxes bboxes)
-    (send dimg_pub_msg :deco_bboxes bbox_array_msg)
+    (send dimg_req_msg :deco_bboxes bbox_array_msg)
     (send visual_point_msg :x (elt *look-at-pos* 0))
     (send visual_point_msg :y (elt *look-at-pos* 1))
     (send visual_point_msg :z (elt *look-at-pos* 2))
-    (send dimg_pub_msg :visual_point visual_point_msg)
+    (send dimg_req_msg :visual_point visual_point_msg)
     )
   )
 
