@@ -1,17 +1,14 @@
 #!/usr/bin/env roseus
 
 ;; set pub sub topics
-(setq *dimgs-pub-topic* "/save_deco_imgs/input")
-
 (defvar *bounding-box-list* "/segmentation_decomposer/boxes")
 (defvar *rgb-image-topic* "/kinect_head/rgb/throttled/image_rect_color")
-(ros::advertise *dimgs-pub-topic* pr2eus_tutorials::DecoImages 1)
 (ros::rate 10)
 
 (defun before-recog-pose ()
   (setq cur_torso_angle (send *pr2* :torso_lift_joint :joint-angle))
   (before-catch-pose)
-  (send *pr2* :head :look-at #f(500 0 1200))
+  (send *pr2* :head :look-at *look-at-pos*)
   (send *pr2* :torso_lift_joint :joint-angle cur_torso_angle)
   ;; (send-robot 5000)
   )
@@ -44,11 +41,13 @@
   )
 
 (defun find-boxes ()
+  (setq bboxes_header nil)
   (setq bboxes '())
   (ros::duration-sleep 1.0)
   (setq bboxes_msg (one-shot-subscribe *bounding-box-list*
 				       jsk_recognition_msgs::BoundingBoxArray
 				       :after-stamp (ros::time-now)))
+  (setq bboxes_header (send bboxes_msg :header))
   (setq bboxes (send bboxes_msg :boxes))
   (if (= (send (send (send (elt bboxes 0) :pose) :position) :x) 0)
       (setq bboxes '()))
@@ -87,8 +86,8 @@
 	 (fin_flag 0))
     (dotimes (i 5)
       (go-vel-rotate (/ pi 6)))
-    (move-arm-out-of-view #f(500 0 1200))
-    (send-robot 5000)
+    ;; (move-arm-out-of-view #f(500 0 1200))
+    ;; (send-robot 5000)
     (while (= fin_flag 0)
       (find-boxes)
       (format t "find ~A boxes~%" (length bboxes))
@@ -105,23 +104,27 @@
     ))
 
 (defun get-deco-image ()
-  ;; Subscribe image_raw
-  (setq *image-raw-msg*
-	(one-shot-subscribe "/kinect_head/rgb/throttled/image_rect_color"
-			    sensor_msgs::Image
-			    :after-stamp (ros::time-now)))
-  (send dimg_pub_msg :deco_imgs *image-raw-msg*)
-  (send dimg_pub_msg :deco_bboxes bboxes)
-  (setq visual_point_msg (instance geometry_msgs::Point :init))
-  (send visual_point_msg :x 500)
-  (send visual_point_msg :y 0)
-  (send visual_point_msg :z 1200)
-  (send dimg_pub_msg :visual_point visual_point_msg)
+  (let* ((bbox_array_msg (instance jsk_recognition_msgs::BoundingBoxArray :init))
+	 (visual_point_msg (instance geometry_msgs::Point :init)))
+    ;; Subscribe image_raw
+    (setq *image-raw-msg*
+	  (one-shot-subscribe "/kinect_head/rgb/throttled/image_rect_color"
+			      sensor_msgs::Image
+			      :after-stamp (ros::time-now)))
+    (send dimg_pub_msg :deco_imgs *image-raw-msg*)
+    (send bbox_array_msg :header bboxes_header)
+    (send bbox_array_msg :boxes bboxes)
+    (send dimg_pub_msg :deco_bboxes bbox_array_msg)
+    (send visual_point_msg :x (elt *look-at-pos* 0))
+    (send visual_point_msg :y (elt *look-at-pos* 1))
+    (send visual_point_msg :z (elt *look-at-pos* 2))
+    (send dimg_pub_msg :visual_point visual_point_msg)
+    )
   )
 
 (defun recognize-decoration ()
-  (before-recog-pose)
-  (send-robot 5000)
+  ;; (before-recog-pose)
+  ;; (send-robot 5000)
   (find-decoration)
   (get-deco-image)
   )

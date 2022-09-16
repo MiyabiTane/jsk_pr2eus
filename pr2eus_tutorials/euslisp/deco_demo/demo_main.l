@@ -26,6 +26,7 @@
 (ros::rate 10)
 
 ;; global variables
+(setq *look-at-pos* #f(500 0 1200))
 (setq deco_image_lst '())
 (setq deco_image_pos_lst '())
 (setq place_pos_lst '())
@@ -48,6 +49,7 @@
 ;; main ------------
 (recognize-wall)
 (recognize-decoration)
+(get-place-pos)
 
 ;; (set-init-pose)
 ;; (format t "set pose ~%")
