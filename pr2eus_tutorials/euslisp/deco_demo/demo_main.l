@@ -33,6 +33,8 @@
 (setq place_pos_lst '())
 (setq dimg_req_msg (instance pr2eus_tutorials::DecoImgsRequest :init))
 (setq pre_x -1)
+(setq *wall-pcl* nil)
+(setq wall_x 0)
 
 ;; set robot
 (pr2-init)

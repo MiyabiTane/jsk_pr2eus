@@ -1,10 +1,12 @@
 #!/usr/bin/env roseus
 
 (setq *screenpoint-pub-topic* "/kinect_head/rgb/throttled/image_rect_color/screenpoint")
+(setq *screenpoint-points-topic* "/screen_point/input/points")
 (setq *screenpoint-sub-topic* "/pointcloud_screenpoint_nodelet/output_point")
 (setq *camera-frame* "head_mount_kinect_rgb_optical_frame")
 (setq *base-frame* "base_footprint")
 (ros::advertise *screenpoint-pub-topic* geometry_msgs::PointStamped 1)
+(ros::advertise *screenpoint-points-topic* sensor_msgs::PointCloud2 1)
 (ros::rate 10)
 
 (defun send-robot (wait_time)
@@ -109,19 +111,23 @@
     (setq pre_x cur_x))
   )
 
-(defun convert-2D->3D (x y)
+(defun convert-2D->3D (x y points_msg)
+  ;; points_msg: /kinect_head/depth_registered/throttled/points
   ;; use pointcloud_screenpoint_nodelet
-  (ros::subscribe *screenpoint-sub-topic* geometry_msgs::PointStamped #'screen-pos-cb)
-  (setq pub-msg (instance geometry_msgs::PointStamped :init))
-  (send pub-msg :header :stamp (ros::time-now))
-  (send pub-msg :header :frame_id *camera-frame*)
-  (send (send pub-msg :point) :x x)
-  (send (send pub-msg :point) :y y)
-  (setq flag 0)
-  (while (= flag 0)
-    (ros::publish *screenpoint-pub-topic* pub-msg)
-    (ros::spin-once)
-    (ros::sleep))
-  ;; result 3D pos: result_3d_pos
-  (ros::unsubscribe *screenpoint-sub-topic*)
+  (let* ((x x) (y y) (points_msg points_msg)
+	 (pub_xy_msg (instance geometry_msgs::PointStamped :init)))
+    (ros::subscribe *screenpoint-sub-topic* geometry_msgs::PointStamped #'screen-pos-cb)
+    (send pub_xy_msg :header :stamp (ros::time-now))
+    (send pub_xy_msg :header :frame_id *camera-frame*)
+    (send (send pub_xy_msg :point) :x x)
+    (send (send pub_xy_msg :point) :y y)
+    (setq flag 0)
+    (while (= flag 0)
+      (ros::publish *screenpoint-pub-topic* pub_xy_msg)
+      (ros::publish *screenpoint-points-topic* points_msg)
+      (ros::spin-once)
+      (ros::sleep))
+    ;; result 3D pos: result_3d_pos
+    (ros::unsubscribe *screenpoint-sub-topic*)
+    )
   )

@@ -17,10 +17,9 @@
     (dotimes (i (length result_arr))
       (setq x (send (send (elt result_arr i) :position) :x))
       (setq y (send (send (elt result_arr i) :position) :y))
-      ;; ToDo screenpointの点群入力を壁の情報にする必要がある
-      (format t "x: ~A, y: ~A~%" x y)
-      (convert-2D->3D x y)
-      (format t "result_3d_pos: ~A~%" result_3d_pos)
+      ;; (format t "x: ~A, y: ~A~%" x y)
+      (convert-2D->3D x y *wall-pcl*)
+      ;; (format t "result_3d_pos: ~A~%" result_3d_pos)
       (setq place_pos_lst (append place_pos_lst (list result_3d_pos)))
       )
     (format t "place_pos_lst: ~A~%" place_pos_lst)
