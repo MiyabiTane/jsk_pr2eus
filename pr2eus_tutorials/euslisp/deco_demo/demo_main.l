@@ -35,6 +35,7 @@
 (setq pre_x -1)
 (setq *wall-pcl* nil)
 (setq wall_x 0)
+(setq bboxes '())
 
 ;; set robot
 (pr2-init)

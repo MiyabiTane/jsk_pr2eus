@@ -131,3 +131,31 @@
     (ros::unsubscribe *screenpoint-sub-topic*)
     )
   )
+
+(defun tf-pose->coords (frame_id pose)
+  (send (send *tfl* :lookup-transform *base-frame-id* frame_id (ros::time 0))
+        :transform (ros::tf-pose->coords pose)))
+
+(defun bbox->cube (bbox)
+  (let* ((dims (ros::tf-point->pos (send bbox :dimensions)))
+         (bx (make-cube (elt dims 0) (elt dims 1) (elt dims 2))))
+    (send bx :newcoords
+          (tf-pose->coords (send bbox :header :frame_id) (send bbox :pose)))
+    bx))
+
+(defun view-debug-box (i)
+  (setq debug_cube (bbox->cube (elt bboxes i)))
+  (objects (list *pr2* debug_cube))
+  )
+
+(defun bbox->lst (bbox)
+  (let* ((pos #f(0 0 0))
+	 (dims #f(0 0 0)))
+    (setq coords (tf-pose->coords (send bbox :header :frame_id) (send bbox :pose)))
+    (setq pos (send coords :pos))
+    (setq dims (ros::tf-point->pos (send bbox :dimensions)))
+    ;; (format t "coords: ~A~%" coords)
+    ;; (format t "dims: ~A~%" dims)
+    (list coords dims))
+  )
+
