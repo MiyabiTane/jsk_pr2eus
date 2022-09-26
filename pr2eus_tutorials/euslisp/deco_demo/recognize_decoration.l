@@ -152,9 +152,6 @@
 			      sensor_msgs::Image
 			      :after-stamp (ros::time-now)))
     (send dimg_req_msg :decos_img *image-raw-msg*)
-    (send bbox_array_msg :header bboxes_header)
-    (send bbox_array_msg :boxes bboxes)
-    (send dimg_req_msg :deco_bboxes bbox_array_msg)
     (send visual_point_msg :x (elt look_at_pos 0))
     (send visual_point_msg :y (elt look_at_pos 1))
     (send visual_point_msg :z (elt look_at_pos 2))

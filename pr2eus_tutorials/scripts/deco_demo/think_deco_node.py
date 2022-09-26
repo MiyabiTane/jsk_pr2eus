@@ -6,6 +6,7 @@ import roslib.packages
 import cv2
 
 from think_deco import ThinkDecoration, think_with_trained_pix2pix, remove_dup_deco
+from make_deco_imgs import print_decoration_info
 
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseArray
 from std_msgs.msg import String
@@ -31,6 +32,8 @@ class ThinkDecorationNode:
         """ToDo
         use req.bimg_lt_pos, req.bimg_rb_pos, req.visual_point, req.deco_bboxes, req.decos_img
         """
+        print_decoration_info(req.decos_img, req.decos_pos, req.decos_dims,
+                                req.decos_rec_uv, req.bimg_lt_pos, req.bimg_rb_pos, req.visual_point)
         #### temporary ####
         files = glob.glob(self.dir_path + "/images/temp/input*.jpg")
         files = sorted(files, key=lambda x: int(x[-5]))

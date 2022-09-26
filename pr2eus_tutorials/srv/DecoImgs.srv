@@ -1,7 +1,7 @@
 std_msgs/Header header
 sensor_msgs/Image back_img
 sensor_msgs/Image decos_img
-jsk_recognition_msgs/BoundingBoxArray deco_bboxes
+jsk_recognition_msgs/PlotData[] decos_rec_uv
 geometry_msgs/Point[] decos_pos
 geometry_msgs/Point[] decos_dims
 geometry_msgs/Point bimg_lt_pos

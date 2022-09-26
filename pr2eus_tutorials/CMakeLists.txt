@@ -8,6 +8,7 @@ add_message_files(DIRECTORY msg FILES
 
 add_service_files(DIRECTORY srv FILES
   DecoImgs.srv
+  PointStamped.srv
 )
 
 generate_messages(

@@ -131,6 +131,12 @@
     </rosparam>
   </node>
 
+  <!-- 3Dpoint -> 2Dpoint Service-->
+  <node name="xyz_to_screen_point"
+	pkg="pr2eus_tutorials" type="xyz_to_screenpoint.py"
+	output="screen" respawn="false">
+  </node>
+
   <!-- node to convert /response (std_msgs/String) to /robotsound_jp (sound_play/SoundRequest) -->
   <node pkg="topic_tools" type="relay_field" name="string_to_sound_request"
 	args="--wait-for-start /response /robotsound_jp sound_play/SoundRequest

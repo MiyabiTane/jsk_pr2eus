@@ -12,6 +12,7 @@
     (send point_msg :y (elt result_3d_pos 1))
     (send point_msg :z (elt result_3d_pos 2))
     (send dimg_req_msg :bimg_lt_pos point_msg)
+    (setq point_msg (instance geometry_msgs::Point :init))
     (convert-2D->3D 640 480 *wall-pcl*)
     (format t "right_bottom pos: ~A~%" result_3d_pos)
     (send point_msg :x (elt result_3d_pos 0))
