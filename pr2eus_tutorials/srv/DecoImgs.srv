@@ -6,6 +6,6 @@ geometry_msgs/Point[] decos_pos
 geometry_msgs/Point[] decos_dims
 geometry_msgs/Point bimg_lt_pos
 geometry_msgs/Point bimg_rb_pos
-geometry_msgs/Point visual_point
+geometry_msgs/Point[] planes_norm_vec
 ---
 geometry_msgs/PoseArray result_pos

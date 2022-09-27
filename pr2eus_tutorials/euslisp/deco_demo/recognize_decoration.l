@@ -152,10 +152,10 @@
 			      sensor_msgs::Image
 			      :after-stamp (ros::time-now)))
     (send dimg_req_msg :decos_img *image-raw-msg*)
-    (send visual_point_msg :x (elt look_at_pos 0))
-    (send visual_point_msg :y (elt look_at_pos 1))
-    (send visual_point_msg :z (elt look_at_pos 2))
-    (send dimg_req_msg :visual_point visual_point_msg)
+    ;; (send visual_point_msg :x (elt look_at_pos 0))
+    ;; (send visual_point_msg :y (elt look_at_pos 1))
+    ;; (send visual_point_msg :z (elt look_at_pos 2))
+    ;; (send dimg_req_msg :visual_point visual_point_msg)
     )
   )
 

@@ -33,7 +33,7 @@ class ThinkDecorationNode:
         use req.bimg_lt_pos, req.bimg_rb_pos, req.visual_point, req.deco_bboxes, req.decos_img
         """
         print_decoration_info(req.decos_img, req.decos_pos, req.decos_dims,
-                                req.decos_rec_uv, req.bimg_lt_pos, req.bimg_rb_pos, req.visual_point)
+                                req.decos_rec_uv, req.bimg_lt_pos, req.bimg_rb_pos, req.planes_norm_vec)
         #### temporary ####
         files = glob.glob(self.dir_path + "/images/temp/input*.jpg")
         files = sorted(files, key=lambda x: int(x[-5]))

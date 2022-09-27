@@ -18,7 +18,7 @@ from image_geometry import PinholeCameraModel
 DIR_PATH = roslib.packages.get_pkg_dir('pr2eus_tutorials') + "/scripts/deco_demo/"
 
 
-def print_decoration_info(decos_img, decos_pos, decos_dims, decos_req_uv, bimg_lt_pos, bimg_rb_pos, visual_point):
+def print_decoration_info(decos_img, decos_pos, decos_dims, decos_req_uv, bimg_lt_pos, bimg_rb_pos, planes_norm_vec):
     # deco_bboxes's frame_id -> "head_mount_kinect_rgb_optical_frame"
     # other's frame_id -> "base_footprint"
     bridge = CvBridge()
@@ -27,7 +27,7 @@ def print_decoration_info(decos_img, decos_pos, decos_dims, decos_req_uv, bimg_l
     print("Back Img info->")
     print("lt: ", bimg_lt_pos.x, bimg_lt_pos.y, bimg_lt_pos.z)
     print("rb: ", bimg_rb_pos.x, bimg_rb_pos.y, bimg_rb_pos.z)
-    print("visual_point: ", visual_point)
+    print("planes_norm_vec: ", np.array(planes_norm_vec))
     print("= decos_pos")
     print(np.array(decos_pos))
     print("= decos_dims")
