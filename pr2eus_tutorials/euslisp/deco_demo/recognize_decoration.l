@@ -132,6 +132,7 @@
 	    (go-vel-linear -100)
 	    (send *pr2* :head :look-at look_at_pos)
 	    (send-robot 1000)
+	    (ros::duration-sleep 3)
 	    (find-boxes)
 	    (format t "find ~A boxes, look at: ~A~%" (length bboxes) mean_pos)
 	    (setq fin_flag 1))
@@ -145,17 +146,17 @@
 (defun get-deco-image (look_at_pos)
   (let* ((look_at_pos look_at_pos)
 	 (bbox_array_msg (instance jsk_recognition_msgs::BoundingBoxArray :init))
-	 (visual_point_msg (instance geometry_msgs::Point :init)))
+	 (look_at_point_msg (instance geometry_msgs::Point :init)))
     ;; Subscribe image_raw
     (setq *image-raw-msg*
 	  (one-shot-subscribe "/kinect_head/rgb/throttled/image_rect_color"
 			      sensor_msgs::Image
 			      :after-stamp (ros::time-now)))
     (send dimg_req_msg :decos_img *image-raw-msg*)
-    ;; (send visual_point_msg :x (elt look_at_pos 0))
-    ;; (send visual_point_msg :y (elt look_at_pos 1))
-    ;; (send visual_point_msg :z (elt look_at_pos 2))
-    ;; (send dimg_req_msg :visual_point visual_point_msg)
+    (send look_at_point_msg :x (elt look_at_pos 0))
+    (send look_at_point_msg :y (elt look_at_pos 1))
+    (send look_at_point_msg :z (elt look_at_pos 2))
+    (send dimg_req_msg :look_at_point look_at_point_msg)
     )
   )
 

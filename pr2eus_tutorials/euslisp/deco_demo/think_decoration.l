@@ -92,23 +92,10 @@
       (send dimg_req_msg :decos_pos (append (send dimg_req_msg :decos_pos) (list pos_msg)))
       (send dimg_req_msg :decos_dims (append (send dimg_req_msg :decos_dims) (list dims_msg)))
       )
-    ;; desk plane norm vector
-    (ros::subscribe *plane-norm-topic* geometry_msgs::PoseArray #'plane-norm-cb)
-    (setq pose_msg nil)
-    (while (not pose_msg)
-      (ros::spin-once)
-      (ros::sleep))
-    (ros::unsubscribe *plane-norm-topic*)
-    (dotimes (i (length norm_rpy_lst))
-      (setq plane_norm_vec (get-plane-norm-vec (elt norm_rpy_lst i)))
-      ;; (format t "plane_norm_vec ~A~%" plane_norm_vec)
-      (setq visual_point_msg (instance geometry_msgs::Point :init))
-      (send visual_point_msg :x (elt plane_norm_vec 0))
-      (send visual_point_msg :y (elt plane_norm_vec 1))
-      (send visual_point_msg :z (elt plane_norm_vec 2))
-      (send dimg_req_msg :planes_norm_vec
-	    (append (send dimg_req_msg :planes_norm_vec) (list visual_point_msg)))
-      )
+    ;; head angle
+    (setq angle_msg (instance std_msgs::Float64 :init))
+    (send angle_msg :data (send *pr2* :head_tilt_joint :joint-angle))
+    (send dimg_req_msg :head_angle angle_msg)
     ))
 
 (defun store-result (result_pos)
