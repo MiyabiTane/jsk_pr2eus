@@ -32,8 +32,8 @@ class ThinkDecorationNode:
         """ToDo
         use req.bimg_lt_pos, req.bimg_rb_pos, req.visual_point, req.deco_bboxes, req.decos_img
         """
-        print_decoration_info(req.decos_img, req.decos_pos, req.decos_dims, req.decos_rec_uv,
-                                req.bimg_lt_pos, req.bimg_rb_pos, req.head_angle, req.look_at_point)
+        print_decoration_info(req.decos_img, req.decos_pos, req.decos_dims, req.decos_rec_uv, req.dimg_rect_pos,
+                                req.bimg_lt_pos, req.bimg_rb_pos, req.head_angle, req.look_at_point, req.look_at_uv)
         #### temporary ####
         files = glob.glob(self.dir_path + "/images/temp/input*.jpg")
         files = sorted(files, key=lambda x: int(x[-5]))

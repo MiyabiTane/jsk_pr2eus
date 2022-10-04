@@ -8,5 +8,7 @@ geometry_msgs/Point bimg_lt_pos
 geometry_msgs/Point bimg_rb_pos
 std_msgs/Float64 head_angle
 geometry_msgs/Point look_at_point
+geometry_msgs/Point look_at_uv
+geometry_msgs/Point[] dimg_rect_pos
 ---
 geometry_msgs/PoseArray result_pos

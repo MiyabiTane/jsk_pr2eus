@@ -41,8 +41,8 @@
 	 (lt_res) (rt_res) (lb_res) (rb_res))
     (setq lt_pos (v+ pos (float-vector h_length h_width h_height)))
     (setq rt_pos (v+ pos (float-vector h_length h_width_m h_height)))
-    (setq lb_pos (v+ pos (float-vector h_length_m h_width h_height_m)))
-    (setq rb_pos (v+ pos (float-vector h_length_m h_width_m h_height_m)))
+    (setq lb_pos (v+ pos (float-vector h_length_m h_width h_height)))  ;; h_height_m)))
+    (setq rb_pos (v+ pos (float-vector h_length_m h_width_m h_height)))  ;; h_height_m)))
     (setq lt_res (send (convert-xyz-to-uv lt_pos) :point))
     (setq rt_res (send (convert-xyz-to-uv rt_pos) :point))
     (setq lb_res (send (convert-xyz-to-uv lb_pos) :point))
@@ -54,6 +54,30 @@
     )
   )
 
+(defun get-decosimg-pos ()
+  (let* ((*cur-pcl*
+	  (one-shot-subscribe "/kinect_head/depth_registered/throttled/points"
+			      sensor_msgs::PointCloud2
+			      :after-stamp (ros::time-now)))
+	 (point_msg (instance geometry_msgs::Point :init))
+	 (pub_msg_lst '()))
+    (convert-2D->3D 0 0 *cur-pcl*)
+    (format t "left_top pos: ~A~%" result_3d_pos)
+    (send point_msg :x (elt result_3d_pos 0))
+    (send point_msg :y (elt result_3d_pos 1))
+    (send point_msg :z (elt result_3d_pos 2))
+    (setq pub_msg_lst (append pub_msg_lst (list point_msg)))
+    (convert-2D->3D 640 480 *cur-pcl*)
+    (format t "right_bottom pos: ~A~%" result_3d_pos)
+    (setq point_msg (instance geometry_msgs::Point :init))
+    (send point_msg :x (elt result_3d_pos 0))
+    (send point_msg :y (elt result_3d_pos 1))
+    (send point_msg :z (elt result_3d_pos 2))
+    (setq pub_msg_lst (append pub_msg_lst (list point_msg)))
+
+    (send dimg_req_msg :dimg_rect_pos pub_msg_lst)
+    ))
+
 (defun set-pub-msg ()
   (let* ((pos_lst_msg '())
 	 (dims_lst_msg '())
@@ -63,9 +87,7 @@
 	 (pos)
 	 (dims)
 	 (xs_ys_lst)
-	 (rec_uv_msg (instance jsk_recognition_msgs::PlotData :init))
-	 (plane_norm_vec)
-	 (visual_point_msg (instance geometry_msgs::Point :init)))
+	 (rec_uv_msg (instance jsk_recognition_msgs::PlotData :init)))
     (send dimg_req_msg :header :stamp (ros::time-now))
     (dotimes (i (length bboxes))
       (setq deco_box (elt bboxes i))
@@ -96,6 +118,8 @@
     (setq angle_msg (instance std_msgs::Float64 :init))
     (send angle_msg :data (send *pr2* :head_tilt_joint :joint-angle))
     (send dimg_req_msg :head_angle angle_msg)
+    ;; RGB image 3D pos
+    (get-decosimg-pos)
     ))
 
 (defun store-result (result_pos)

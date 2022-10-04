@@ -157,6 +157,10 @@
     (send look_at_point_msg :y (elt look_at_pos 1))
     (send look_at_point_msg :z (elt look_at_pos 2))
     (send dimg_req_msg :look_at_point look_at_point_msg)
+    ;; look_at_point_2d
+    (setq look_at_point_msg (instance geometry_msgs::Point :init))
+    (setq look_at_point_msg (convert-xyz-to-uv look_at_pos))
+    (send dimg_req_msg :look_at_uv look_at_point_msg)
     )
   )
 
