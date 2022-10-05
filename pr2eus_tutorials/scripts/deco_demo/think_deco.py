@@ -90,6 +90,7 @@ class ThinkDecoration:
         self.genes = []
         self.best_gene = (-1 * float('inf'), None)
         self.debug_count = 0
+
         for _ in range(nums):
             gene = []
             for im in self.imgs:
@@ -121,7 +122,7 @@ class ThinkDecoration:
         self.visited = np.where(self.visited == 1, 0, self.visited)
         for pos_x, pos_y, h, w in gene:
             new_x, new_y = self.generate_new_pos(pos_x, pos_y, h, w, debug)
-            self.visited[int(new_y - h/2): int(new_y + h/2), int(new_x - w/2): int(new_x + w/2)] = 1
+            self.visited[int(new_y - h/2.0): int(new_y + h/2.0), int(new_x - w/2.0): int(new_x + w/2.0)] = 1
             new_gene.append((new_x, new_y, h, w))
         return new_gene
 
@@ -132,7 +133,7 @@ class ThinkDecoration:
         while to_visit:
             count += 1
             pos_x, pos_y = to_visit.popleft()
-            check_array = self.visited[int(pos_y - h/2): int(pos_y + h/2), int(pos_x - w/2): int(pos_x + w/2)]
+            check_array = self.visited[int(pos_y - h/2.0): int(pos_y + h/2.0), int(pos_x - w/2.0): int(pos_x + w/2.0)]
             over_y, over_x = np.where((check_array == 1) | (check_array == 2))
             over_y, over_x = set(over_y), set(over_x)
             if debug:
@@ -167,11 +168,18 @@ class ThinkDecoration:
         for i, deco_img in enumerate(self.imgs):
             pos_x, pos_y, h, w = gene[i]
             mask_img = self.masks[i]
-            back_img = output_img[int(pos_y - h/2): int(pos_y + h/2), int(pos_x - w/2): int(pos_x + w/2)]
-            deco_img[mask_img < 150] = [0, 0, 0]
-            back_img[mask_img >= 150] = [0, 0, 0]
+            back_img = output_img[int(pos_y - h/2.0): int(pos_y + h/2.0), int(pos_x - w/2.0): int(pos_x + w/2.0)]
+            # print(back_img.shape, deco_img.shape, mask_img.shape)
+            try:
+                deco_img[mask_img < 150] = [0, 0, 0]
+                back_img[mask_img >= 150] = [0, 0, 0]
+            except:
+                deco_img = cv2.resize(deco_img, dsize=(int(pos_y + h/2.0) - int(pos_y - h/2.0), int(pos_x + w/2.0) - int(pos_x - w/2.0)))
+                mask_img = cv2.resize(mask_img, dsize=(int(pos_y + h/2.0) - int(pos_y - h/2.0), int(pos_x + w/2.0) - int(pos_x - w/2.0)))
+                deco_img[mask_img < 150] = [0, 0, 0]
+                back_img[mask_img >= 150] = [0, 0, 0]
             comp_img = cv2.add(deco_img, back_img)
-            output_img[int(pos_y - h/2): int(pos_y + h/2), int(pos_x - w/2): int(pos_x + w/2)] = comp_img
+            output_img[int(pos_y - h/2.0): int(pos_y + h/2.0), int(pos_x - w/2.0): int(pos_x + w/2.0)] = comp_img
         # cv2.imwrite("output0707.jpg", output_img)
         return output_img
 
@@ -222,7 +230,7 @@ class ThinkDecoration:
             # 各飾りに関して、置く前と置いた後のどちらが類似度が高いかを調べる
             point = 0
             for pos_x, pos_y, h, w in self.genes[i]:
-                ly, ry, lx, rx = int(pos_y - h/2), int(pos_y + h/2), int(pos_x - w/2), int(pos_x + w/2)
+                ly, ry, lx, rx = int(pos_y - h/2.0), int(pos_y + h/2.0), int(pos_x - w/2.0), int(pos_x + w/2.0)
                 similarity = self.calc_img_sim(decorated_img[ly: ry, lx: rx, :], self.output[ly: ry, lx: rx, :])
                 point += similarity
             points.append(point)
@@ -242,7 +250,7 @@ class ThinkDecoration:
 
     def partial_crossover(self, parent_1, parent_2):
         num = len(parent_1)
-        cross_point = random.randrange(2, num-1) if num > 2 else 0
+        cross_point = random.randrange(2, num-1) if num > 3 else 0
         child_1 = parent_1
         child_2 = parent_2
         for i in range(num - cross_point):
@@ -296,8 +304,8 @@ class ThinkDecoration:
             if flag == 1:
                 m_index = np.random.choice(len(self.imgs), 1, replace = False)[0]
                 h, w, _ = self.imgs[m_index].shape
-                random_x = random.randint(w / 2, self.W - w / 2)
-                random_y = random.randint(h / 2, self.H - h / 2)
+                random_x = random.randint(int(w / 2.0), int(self.W - w / 2.0)) if self.W > w / 2.0 + 1 else 0
+                random_y = random.randint(int(h / 2.0), int(self.H - h / 2.0)) if self.H > h / 2.0 + 1 else 0
                 self.genes[index][m_index] == (random_x, random_y, h, w)
                 self.genes[index] = self.remove_overlap(self.genes[index])
 

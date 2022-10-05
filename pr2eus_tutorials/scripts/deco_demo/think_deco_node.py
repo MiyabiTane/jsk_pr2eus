@@ -6,7 +6,7 @@ import roslib.packages
 import cv2
 
 from think_deco import ThinkDecoration, think_with_trained_pix2pix, remove_dup_deco
-from make_deco_imgs import print_decoration_info
+from make_deco_imgs import MakeDecoImgs, print_decoration_info
 
 from geometry_msgs.msg import Point, Quaternion, Pose, PoseArray
 from std_msgs.msg import String
@@ -28,24 +28,22 @@ class ThinkDecorationNode:
 
     def deco_srv_cb(self, req):
         print("... thinking decoration ...")
-        self.input_img = self.bridge.imgmsg_to_cv2(req.back_img, desired_encoding="bgr8")
-        """ToDo
-        use req.bimg_lt_pos, req.bimg_rb_pos, req.visual_point, req.deco_bboxes, req.decos_img
-        """
+        # for debug
         print_decoration_info(req.decos_img, req.decos_pos, req.decos_dims, req.decos_rec_uv, req.dimg_rect_pos,
                                 req.bimg_lt_pos, req.bimg_rb_pos, req.head_angle, req.look_at_point, req.look_at_uv)
-        #### temporary ####
-        files = glob.glob(self.dir_path + "/images/temp/input*.jpg")
+        self.input_img = self.bridge.imgmsg_to_cv2(req.back_img, desired_encoding="bgr8")
+        make_deco_imgs = MakeDecoImgs(req.decos_img, req.bimg_lt_pos, req.bimg_rb_pos, req.decos_dims, req.decos_rec_uv)
+        make_deco_imgs.main()
+        files = glob.glob(self.dir_path + "/images/input*.jpg")
         files = sorted(files, key=lambda x: int(x[-5]))
         for fi in files:
             deco_img = cv2.imread(fi)
             self.deco_imgs.append(deco_img)
-        files = glob.glob(self.dir_path + "/images/temp/mask*.jpg")
+        files = glob.glob(self.dir_path + "/images/mask*.jpg")
         files = sorted(files, key=lambda x: int(x[-5]))
         for fi in files:
             mask_img = cv2.imread(fi, 0)
             self.deco_masks.append(mask_img)
-        ####
         # make decoration img
         self.output_img = think_with_trained_pix2pix(self.input_img)
         # Visualize (for debug)
